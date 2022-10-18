@@ -45,6 +45,30 @@ void fn_vToLower( char *szDst, char *szSrc )
 	*szDst = 0;
 }
 
+int fn_vCharCountReverse( char *Str, char Ch, int lMaxChars )
+{
+	int i;
+	for ( i = 0; i < lMaxChars; i++ )
+	{
+		if ( Str[-i] != Ch )
+			break;
+	}
+
+	return i;
+}
+
+int fn_vNotCharCountReverse( char *Str, char Ch, int lMaxChars )
+{
+	int i;
+	for ( i = 0; i < lMaxChars; i++ )
+	{
+		if ( Str[-i] == Ch )
+			break;
+	}
+
+	return i;
+}
+
 
 BOOL fn_bParseBool( char *szArg, BOOL *p_bOut )
 {

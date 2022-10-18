@@ -39,6 +39,7 @@ unsigned long g_ulNbChars = 0;
 /* caret */
 #define C_CaretFrames 15
 unsigned long g_ulCaretPos = 0;
+BOOL g_bReplaceMode = FALSE;
 void fn_vMoveCaret( char cDirection );
 void fn_vPutCaretAtEnd( void );
 
@@ -114,7 +115,7 @@ void fn_vDrawConsole( void )
 	g_lCaretFrame = (g_lCaretFrame + 1) % (C_CaretFrames * 2);
 
 	if ( g_lCaretFrame < C_CaretFrames )
-		FNT_fn_vDisplayString(x + xCaretOffset, y, "_");
+		FNT_fn_vDisplayString(x + xCaretOffset, y, (g_bReplaceMode ? "/o2:_" : "_"));
 
 	/* scrollbar */
 	MTH_tdxReal xScrollBarHeight = M_PercentToFontY(g_stSize.y) - (C_Font_xCharHeight * 2);
@@ -123,6 +124,7 @@ void fn_vDrawConsole( void )
 	
 	x = M_PercentToFontX(g_stCurrentPos.x + g_stSize.x) - C_Font_xCharWidth;
 	y = M_PercentToFontY(g_stCurrentPos.y) + xScrollBarPos;
+
 	FNT_fn_vDisplayString(x, y, "/o1:[");
 
 	*GLI_p_fZValueForSprite = 0.998f;
@@ -334,6 +336,36 @@ void fn_vMoveCaret( char cDirection )
 	}
 }
 
+void fn_vMoveCaretByWord( char cDirection )
+{
+	if ( cDirection > 0 ) /* right */
+	{
+		while ( g_ulCaretPos < g_ulNbChars )
+		{
+			if ( g_szPrompt[g_ulCaretPos] == ' ' )
+			{
+				g_ulCaretPos += strspn(&g_szPrompt[g_ulCaretPos], " ");
+				return;
+			}
+
+			g_ulCaretPos++;
+		}
+	}
+	else if ( cDirection < 0 ) /* left */
+	{
+		while ( g_ulCaretPos > 0 )
+		{
+			g_ulCaretPos--;
+
+			if ( g_szPrompt[g_ulCaretPos] != ' ' )
+			{
+				g_ulCaretPos -= fn_vNotCharCountReverse(&g_szPrompt[g_ulCaretPos], ' ', (int)g_ulCaretPos+1) - 1;
+				return;
+			}
+		}
+	}
+}
+
 void fn_vPutCaretAtEnd( void )
 {
 	g_ulCaretPos = g_ulNbChars;
@@ -371,10 +403,10 @@ void fn_vReplaceCharAtCaret( char ch )
 	{
 		pAtCaret[0] = ch;
 		pAtCaret[1] = 0;
-
 		g_ulNbChars++;
-		g_ulCaretPos++;
 	}
+
+	g_ulCaretPos++;
 }
 
 void fn_vBackspaceCharAtCaret( void )
@@ -441,11 +473,15 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 		return TRUE;
 
 	case VK_LEFT:
-		fn_vMoveCaret(-1);
+		(GetKeyState(VK_CONTROL) & 0x8000)
+			? fn_vMoveCaretByWord(-1)
+			: fn_vMoveCaret(-1);
 		return TRUE;
 
 	case VK_RIGHT:
-		fn_vMoveCaret(1);
+		(GetKeyState(VK_CONTROL) & 0x8000)
+			? fn_vMoveCaretByWord(1)
+			: fn_vMoveCaret(1);
 		return TRUE;
 
 	case VK_PRIOR:
@@ -454,6 +490,10 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 
 	case VK_NEXT:
 		fn_vScrollConsole(-1);
+		return TRUE;
+
+	case VK_INSERT:
+		g_bReplaceMode = !g_bReplaceMode;
 		return TRUE;
 
 	case VK_ESCAPE:
@@ -475,7 +515,9 @@ BOOL fn_bProcessChar( DWORD dwChar )
 	if ( g_ulNbChars >= C_MaxPromptChars )
 		return FALSE;
 
-	fn_vInsertCharAtCaret((char)dwChar);
+	g_bReplaceMode
+		? fn_vReplaceCharAtCaret((char)dwChar)
+		: fn_vInsertCharAtCaret((char)dwChar);
 
 	return TRUE;
 }

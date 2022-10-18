@@ -70,6 +70,8 @@ extern BOOL g_bForceThisCommand;
 
 int fn_lSplitArgs( char *szString, char ***p_d_szArgsOut );
 void fn_vToLower( char *szDst, char *szSrc );
+int fn_vCharCountReverse( char *Str, char Ch, int lMaxChars );
+int fn_vNotCharCountReverse( char *Str, char Ch, int lMaxChars );
 
 BOOL fn_bParseBool( char *szArg, BOOL *p_bOut );
 BOOL fn_bParseInt( char *szArg, int *p_lOut );
