@@ -484,6 +484,14 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 			: fn_vMoveCaret(1);
 		return TRUE;
 
+	case VK_HOME:
+		g_ulCaretPos = 0;
+		return TRUE;
+
+	case VK_END:
+		fn_vPutCaretAtEnd();
+		return TRUE;
+
 	case VK_PRIOR:
 		fn_vScrollConsole(1);
 		return TRUE;
