@@ -8,7 +8,7 @@
 #include "ext/ghost.h"
 
 
-char const g_szVersion[] = "R2Console v1.0 (" __DATE__ ")";
+char const g_szVersion[] = "R2Console v1.1 (" __DATE__ ")";
 
 BOOL g_bIsInit = FALSE;
 BOOL g_bShow = FALSE;
@@ -142,15 +142,15 @@ void fn_vShowConsole( void )
 
     if ( g_bShow )
     {
-        s_ulSaveNbEntry = *R2_ulNumberOfEntryElement;
-		*R2_ulNumberOfEntryElement = 0;
+        s_ulSaveNbEntry = IPT_g_stInputStructure->ulNumberOfEntryElement;
+		IPT_g_stInputStructure->ulNumberOfEntryElement = 0;
 
 		if ( CON_bPauseGame->bValue )
 			GAM_g_stEngineStructure->bEngineIsInPaused = TRUE;
 	}
 	else
 	{
-	    *R2_ulNumberOfEntryElement = s_ulSaveNbEntry;
+	    IPT_g_stInputStructure->ulNumberOfEntryElement = s_ulSaveNbEntry;
 
 		if ( CON_bPauseGame->bValue )
 			GAM_g_stEngineStructure->bEngineIsInPaused = FALSE;

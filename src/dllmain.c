@@ -3,16 +3,16 @@
 #include "console.h"
 
 
-WNDPROC R2_WndProc = OFFSET(0x4022D0);
-void (*R2_AGO_vDisplayGAUGES)( GLD_tdstViewportAttributes *p_stVpt ) = OFFSET(0x460670);
+WNDPROC R2_WndProc = NULL;
+void (*R2_AGO_vDisplayGAUGES)( GLD_tdstViewportAttributes *p_stVpt ) = NULL;
 void (*R2_fn_vEngine)( void ) = NULL;
 void (*R2_GLI_vComputeTextures)( void ) = NULL;
-
-DWORD *R2_ulNumberOfEntryElement = 0x50A560;
 
 
 void fn_vAttachHooks( void )
 {
+	R2_WndProc = GAM_fn_WndProc;
+	R2_AGO_vDisplayGAUGES = AGO_vDisplayGAUGES;
 	R2_fn_vEngine = GAM_fn_vEngine;
 	R2_GLI_vComputeTextures = GLI_vComputeTextures;
 
