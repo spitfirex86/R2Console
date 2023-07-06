@@ -181,3 +181,13 @@ BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut )
 	*p_pstOut = pSuperObj;
 	return TRUE;
 }
+
+
+void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd )
+{
+	RECT rc;
+	GetClientRect(hWnd, &rc);
+
+	p_stOut->x = (float)LOWORD(lParam) / (float)(rc.right - rc.left) * 100.0f;
+	p_stOut->y = (float)HIWORD(lParam) / (float)(rc.bottom - rc.top) * 100.0f;
+}

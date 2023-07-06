@@ -8,7 +8,7 @@
 #include "ext/ghost.h"
 
 
-char const g_szVersion[] = "R2Console v1.1 (" __DATE__ ")";
+char const g_szVersion[] = "R2Console v1.2 (" __DATE__ ")";
 
 BOOL g_bIsInit = FALSE;
 BOOL g_bShow = FALSE;
@@ -57,6 +57,10 @@ BOOL g_bForceThisCommand = FALSE;
 tdstCVar *CON_bPauseGame = NULL;
 tdstCVar *CON_bEnterHides = NULL;
 
+/* highlighted word */
+long g_lMouseOverLine = -1;
+long g_lMouseOverChar = -1;
+
 
 void fn_vAnimOneStep( void )
 {
@@ -80,6 +84,26 @@ void fn_vDrawConsoleSprites( void )
 	CUR_fn_vDrawCursor();
 }
 
+tdstHiLite * fn_p_stHiLiteFindWord( void )
+{
+	if ( g_lMouseOverLine < 0 || g_lMouseOverChar < 0 )
+		return NULL;
+
+	tdstLine *pLine = &g_a_stLines[g_lMouseOverLine];
+
+	for ( int i = 0; i < C_MaxHiLite; ++i )
+	{
+		tdstHiLite *pHiLite = &pLine->stHiLite[i];
+		if ( pHiLite->cTo > pHiLite->cFrom
+			&& g_lMouseOverChar >= pHiLite->cFrom && g_lMouseOverChar < pHiLite->cTo )
+		{
+			return pHiLite;
+		}
+	}
+
+	return NULL;
+}
+
 void fn_vDrawConsole( void )
 {
 	MTH_tdxReal x, y;
@@ -96,11 +120,37 @@ void fn_vDrawConsole( void )
 	y = M_PercentToFontY(g_stCurrentPos.y);
 
 	/* console history */
-	for ( int i = C_LinesOnScreen + g_ulOnScreenOffset - 1; i >= (int)g_ulOnScreenOffset; i-- )
+	for ( int i = C_LinesOnScreen + g_ulOnScreenOffset - 1; i >= (int)g_ulOnScreenOffset; --i )
 	{
+		char *szText = g_a_stLines[i].szText;
+		char cColor = FNT_M_lColorToChar(g_a_stLines[i].ucColor);
+		char szTmp[C_MaxLine+2];
+
+		if ( i == g_lMouseOverLine )
+		{
+			tdstHiLite *pHiLite = fn_p_stHiLiteFindWord();
+			if ( pHiLite )
+			{
+				char *pTmp = szTmp;
+
+				strncpy(pTmp, szText, pHiLite->cFrom);
+				pTmp += pHiLite->cFrom;
+				*pTmp++ = '\023';
+
+				int lInnerLength = pHiLite->cTo - pHiLite->cFrom;
+				strncpy(pTmp, szText + pHiLite->cFrom, lInnerLength);
+				pTmp += lInnerLength;
+				*pTmp++ = cColor;
+
+				strcpy(pTmp, szText + pHiLite->cTo);
+				szText = szTmp;
+			}
+		}
+
 		g_a_stLines[i].cPrefix
-			? FNT_fn_vDisplayStringFmt(x, y, "%c%c%s", FNT_M_lColorToChar(g_a_stLines[i].ucColor), g_a_stLines[i].cPrefix, g_a_stLines[i].szText)
-			: FNT_fn_vDisplayStringFmt(x, y, "%c%s", FNT_M_lColorToChar(g_a_stLines[i].ucColor), g_a_stLines[i].szText);
+			? FNT_fn_vDisplayStringFmt(x, y, "%c%c%s", cColor, g_a_stLines[i].cPrefix, szText)
+			: FNT_fn_vDisplayStringFmt(x, y, "%c%s", cColor, szText);
+
 		y += C_Font_xCharHeight;
 
 	}
@@ -108,6 +158,7 @@ void fn_vDrawConsole( void )
 
 	/* prompt */
 	FNT_fn_vDisplayStringFmt(x, y, "\021]%s", g_szPrompt);
+	//FNT_fn_vDisplayStringFmt(x, y, "%d;%d \021]%s", g_lMouseOverLine, g_lMouseOverChar, g_szPrompt);
 
 	*GLI_g_fZValueForSprite = 1.22f;
 
@@ -164,7 +215,7 @@ void fn_vPushHistory( char *szString )
 	strcpy(g_a_szCmdHistory[0], szString);
 }
 
-void fn_vPushLine( char *szString, unsigned char ucColor, char cPrefix )
+void fn_vPushLineWithHiLite( char *szString, unsigned char ucColor, char cPrefix, tdstHiLite *a_stHiLite )
 {
 	// Shift lines by 1
 	memmove(&g_a_stLines[1], &g_a_stLines[0], (C_NbLines-1)*sizeof(tdstLine));
@@ -173,8 +224,18 @@ void fn_vPushLine( char *szString, unsigned char ucColor, char cPrefix )
     g_a_stLines[0].cPrefix = cPrefix;
 	strcpy(g_a_stLines[0].szText, szString);
 
+	if ( a_stHiLite )
+		memcpy(g_a_stLines[0].stHiLite, a_stHiLite, C_MaxHiLite*sizeof(tdstHiLite));
+	else
+		ZeroMemory(g_a_stLines[0].stHiLite, C_MaxHiLite*sizeof(tdstHiLite));
+
 	// Scroll to newest line
 	g_ulOnScreenOffset = 0;
+}
+
+void fn_vPushLine( char *szString, unsigned char ucColor, char cPrefix )
+{
+	fn_vPushLineWithHiLite(szString, ucColor, cPrefix, NULL);
 }
 
 void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
@@ -182,9 +243,26 @@ void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
 	char szBuffer[C_MaxLine];
 	char const *pChar = szString;
 	int nChars = 0;
+	tdstHiLite stHiLite[C_MaxHiLite] = { 0 };
+	tdstHiLite *pHiLite = stHiLite;
 
     do
     {
+		if ( pHiLite < &stHiLite[C_MaxHiLite] )
+		{
+			if ( *pChar == '\002' )
+			{
+				pHiLite->cFrom = (char)nChars;
+				continue;
+			}
+			if ( *pChar == '\003' )
+			{
+				pHiLite->cTo = (char)nChars;
+				pHiLite++;
+				continue;
+			}
+		}
+
 		szBuffer[nChars] = (*pChar == '\n') ? ' ' : *pChar;
 		nChars++;
 
@@ -193,7 +271,9 @@ void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
 			szBuffer[nChars] = '\0';
 			nChars = 0;
 
-			fn_vPushLine(szBuffer, ucColor, cPrefix);
+			fn_vPushLineWithHiLite(szBuffer, ucColor, cPrefix, stHiLite);
+			ZeroMemory(stHiLite, sizeof(stHiLite));
+			pHiLite = stHiLite;
         }
 
     } while ( *pChar++ );
@@ -241,7 +321,7 @@ void fn_vParseCommand( char *szString )
 		szString++; length--;
 	}
 
-    if ( length <= 0 )
+    if ( length <= 0 || length >= C_MaxCmdName )
     {
         fn_vPrintC(2, "Unknown command");
 		return;
@@ -595,6 +675,51 @@ void MOD_fn_vEngine( void )
 	GAM_fn_vEngine();
 }
 
+void fn_vHiLiteHitTest( MTH2D_tdstVector *p_stPos )
+{
+	if ( p_stPos->x > g_stCurrentPos.x && p_stPos->x < (g_stCurrentPos.x + g_stSize.x)
+		&& p_stPos->y > g_stCurrentPos.y && p_stPos->y < (g_stCurrentPos.y + g_stSize.y) )
+	{
+		MTH_tdxReal xPosY = p_stPos->y - g_stCurrentPos.y;
+		int lLineFromTop = (int)(xPosY / M_FontToPercentY(C_Font_xCharHeight)) + 1;
+		g_lMouseOverLine = C_LinesOnScreen + g_ulOnScreenOffset - lLineFromTop;
+
+		MTH_tdxReal xPosX = p_stPos->x - g_stCurrentPos.x;
+		g_lMouseOverChar = (int)(xPosX / M_FontToPercentX(C_Font_xActualCharWidth));
+	}
+	else
+	{
+		g_lMouseOverLine = -1;
+		g_lMouseOverChar = -1;
+	}
+}
+
+void fn_vHiLiteSelect( MTH2D_tdstVector *p_stPos )
+{
+	/* hit test just to be sure */
+	fn_vHiLiteHitTest(p_stPos);
+
+	tdstLine *pLine = &g_a_stLines[g_lMouseOverLine];
+	tdstHiLite *pHiLite = fn_p_stHiLiteFindWord();
+	if ( !pHiLite )
+		return;
+
+	int lFreeSpace = C_MaxPromptChars - strlen(g_szPrompt);
+	int lLength = pHiLite->cTo - pHiLite->cFrom;
+	if ( lLength > lFreeSpace )
+		lLength = lFreeSpace;
+
+	/* move rest of the prompt */
+	char *pAtCaret = &g_szPrompt[g_ulCaretPos];
+	int lRemaining = strlen(pAtCaret) + 1;
+	memmove(pAtCaret+lLength, pAtCaret, lRemaining);
+
+	strncpy(pAtCaret, pLine->szText + pHiLite->cFrom, lLength);
+	g_ulNbChars = strlen(g_szPrompt);
+	g_ulCaretPos += lLength;
+}
+
+
 LRESULT CALLBACK MOD_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static MTH2D_tdstVector stPos = { 0 };
@@ -609,15 +734,16 @@ LRESULT CALLBACK MOD_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		if ( fn_bProcessChar(wParam) )
 			return 0;
 	}
+	else if ( uMsg == WM_LBUTTONDOWN )
+	{
+		fn_vMouseCoordToPercent(&stPos, lParam, hWnd);
+		fn_vHiLiteSelect(&stPos);
+	}
 	else if ( uMsg == WM_MOUSEMOVE )
 	{
-		RECT rc;
-		GetClientRect(hWnd, &rc);
-		
-		stPos.x = (float)LOWORD(lParam) / (float)(rc.right - rc.left) * 100.0f;
-		stPos.y = (float)HIWORD(lParam) / (float)(rc.bottom - rc.top) * 100.0f;
-
+		fn_vMouseCoordToPercent(&stPos, lParam, hWnd);
 		CUR_fn_vMoveCursor(&stPos);
+		fn_vHiLiteHitTest(&stPos);
 
 #if defined(USE_WATCH)
 		WAT_fn_vHitTestMove(&stPos, (wParam & MK_LBUTTON));

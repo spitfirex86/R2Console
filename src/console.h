@@ -10,11 +10,21 @@
 #define C_NbLines 100
 #define C_LinesOnScreen 14
 #define C_MaxLine 72
+#define C_MaxHiLite 4
+
+typedef struct tdstHiLite
+{
+	char cFrom;
+	char cTo;
+}
+tdstHiLite;
 
 typedef struct tdstLine
 {
 	unsigned char ucColor;
 	char cPrefix;
+
+	tdstHiLite stHiLite[C_MaxHiLite];
 
 	char szText[C_MaxLine];
 }
@@ -80,3 +90,5 @@ int fn_lParseCoordinates( int lSize, char **d_szArgs, MTH_tdxReal *d_xOut );
 
 BOOL fn_bParsePtr( char *szArg, void **p_pOut );
 BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
+
+void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd );
