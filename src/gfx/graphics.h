@@ -49,3 +49,5 @@ void GFX_fn_vDraw2DSpriteWithUV(
 GLI_tdstTexture * GFX_fn_pstFindTexture( char const *szName );
 GLI_tdstMaterial * GFX_fn_hCreateMaterialWithTexture( GLI_tdstTexture *p_stTexture );
 void GFX_fn_vLoadTexture( GLI_tdstTexture *p_stTexture, char const *szGFName );
+
+void GFX_fn_vSetForcedColor( ACP_tdxBool bForce, unsigned char const *a3_Color );

@@ -90,7 +90,7 @@ void fn_vDrawConsole( void )
 	fn_vAnimOneStep();
 	fn_vDrawConsoleSprites();
 
-	*GLI_p_fZValueForSprite = 1.2f;
+	*GLI_g_fZValueForSprite = 1.2f;
 	
 	x = M_PercentToFontX(g_stCurrentPos.x);
 	y = M_PercentToFontY(g_stCurrentPos.y);
@@ -99,23 +99,23 @@ void fn_vDrawConsole( void )
 	for ( int i = C_LinesOnScreen + g_ulOnScreenOffset - 1; i >= (int)g_ulOnScreenOffset; i-- )
 	{
 		g_a_stLines[i].cPrefix
-			? FNT_fn_vDisplayStringFmt(x, y, "/o%d:%c%s", g_a_stLines[i].ucColor, g_a_stLines[i].cPrefix, g_a_stLines[i].szText)
-			: FNT_fn_vDisplayStringFmt(x, y, "/o%d:%s", g_a_stLines[i].ucColor, g_a_stLines[i].szText);
+			? FNT_fn_vDisplayStringFmt(x, y, "%c%c%s", FNT_M_lColorToChar(g_a_stLines[i].ucColor), g_a_stLines[i].cPrefix, g_a_stLines[i].szText)
+			: FNT_fn_vDisplayStringFmt(x, y, "%c%s", FNT_M_lColorToChar(g_a_stLines[i].ucColor), g_a_stLines[i].szText);
 		y += C_Font_xCharHeight;
 
 	}
 	//y += C_Font_xCharHeight;
 
 	/* prompt */
-	FNT_fn_vDisplayStringFmt(x, y, "/o1:]%s", g_szPrompt);
+	FNT_fn_vDisplayStringFmt(x, y, "\021]%s", g_szPrompt);
 
-	*GLI_p_fZValueForSprite = 1.22f;
+	*GLI_g_fZValueForSprite = 1.22f;
 
 	MTH_tdxReal xCaretOffset = C_Font_xActualCharWidth * (float)(g_ulCaretPos + 1);
 	g_lCaretFrame = (g_lCaretFrame + 1) % (C_CaretFrames * 2);
 
 	if ( g_lCaretFrame < C_CaretFrames )
-		FNT_fn_vDisplayString(x + xCaretOffset, y, (g_bReplaceMode ? "/o2:_" : "_"));
+		FNT_fn_vDisplayString(x + xCaretOffset, y, (g_bReplaceMode ? "\022_" : "_"));
 
 	/* scrollbar */
 	MTH_tdxReal xScrollBarHeight = M_PercentToFontY(g_stSize.y) - (C_Font_xCharHeight * 2);
@@ -125,9 +125,9 @@ void fn_vDrawConsole( void )
 	x = M_PercentToFontX(g_stCurrentPos.x + g_stSize.x) - C_Font_xCharWidth;
 	y = M_PercentToFontY(g_stCurrentPos.y) + xScrollBarPos;
 
-	FNT_fn_vDisplayString(x, y, "/o1:[");
+	FNT_fn_vDisplayString(x, y, "\021[");
 
-	*GLI_p_fZValueForSprite = 0.998f;
+	*GLI_g_fZValueForSprite = 0.998f;
 }
 
 void fn_vShowConsole( void )
@@ -180,7 +180,7 @@ void fn_vPushLine( char *szString, unsigned char ucColor, char cPrefix )
 void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
 {
 	char szBuffer[C_MaxLine];
-	char *pChar = szString;
+	char const *pChar = szString;
 	int nChars = 0;
 
     do
@@ -557,22 +557,42 @@ void MOD_GLI_vComputeTextures( void )
 	FNT_fn_vLoadFontTexture();
 	CUR_fn_vLoadCursorTexture();
 
-	R2_GLI_vComputeTextures();
+	GLI_vComputeTextures();
 }
 
 void MOD_AGO_vDisplayGAUGES( GLD_tdstViewportAttributes *p_stVpt )
 {
-	R2_AGO_vDisplayGAUGES(p_stVpt);
+	AGO_vDisplayGAUGES(p_stVpt);
 
 	CUR_fn_vInvalidateCursor();
 	fn_vDrawConsole();
 }
 
+extern unsigned char *g_ucIsEdInGhostMode;
+extern unsigned char g_ucGhostModeCameraWorkaround;
+
 void MOD_fn_vEngine( void )
 {
+	static unsigned char s_ucSaveGhostMode;
+
+	if ( g_ucGhostModeCameraWorkaround )
+	{
+		switch ( g_ucGhostModeCameraWorkaround-- )
+		{
+			case 2:
+				s_ucSaveGhostMode = *g_ucIsEdInGhostMode;
+				*g_ucIsEdInGhostMode = 1;
+				break;
+
+			case 1:
+				*g_ucIsEdInGhostMode = s_ucSaveGhostMode;
+				break;
+		}
+	}
+
 	GST_fn_vDoGhostMode();
 
-	R2_fn_vEngine();
+	GAM_fn_vEngine();
 }
 
 LRESULT CALLBACK MOD_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
@@ -623,5 +643,5 @@ LRESULT CALLBACK MOD_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 #endif
 	}
 
-	return R2_WndProc(hWnd, uMsg, wParam, lParam);
+	return GAM_fn_WndProc(hWnd, uMsg, wParam, lParam);
 }

@@ -140,20 +140,20 @@ void fn_vListObjCmd( int lNbArgs, char **d_szArgs )
 	}
 
 	HIE_tdstSuperObject *pChild;
-	LST_M_DynamicForEach(*GAM_pp_stDynamicWorld, pChild)
+	LST_M_DynamicForEach(*GAM_g_p_stDynamicWorld, pChild)
 	{
 		if ( pChild->ulType == HIE_C_Type_Actor )
 		{
 			if( !(pChild->hLinkedObject.p_stCharacter->hStandardGame->ulCustomBits & Std_C_CustBit_OutOfVisibility) )
 			{
-				fn_vPrintCFmt(0, "%8p  V %s", pChild, XHIE_fn_szGetSuperObjectPersonalName(pChild));
+				fn_vPrintCFmt(0, "%8p  V %s", pChild, HIE_fn_szGetObjectPersonalName(pChild));
 			}
 			else
 			{
 				if ( bOnlyVisible )
 					continue;
 
-				fn_vPrintCFmt(0, "%8p    %s", pChild, XHIE_fn_szGetSuperObjectPersonalName(pChild));
+				fn_vPrintCFmt(0, "%8p    %s", pChild, HIE_fn_szGetObjectPersonalName(pChild));
 			}
 		}
 	}
@@ -161,11 +161,11 @@ void fn_vListObjCmd( int lNbArgs, char **d_szArgs )
 	if ( !bIncludeInactive )
 		return;
 
-	LST_M_DynamicForEach(*GAM_pp_stInactiveDynamicWorld, pChild)
+	LST_M_DynamicForEach(*GAM_g_p_stInactiveDynamicWorld, pChild)
 	{
 		if ( pChild->ulType == HIE_C_Type_Actor )
 		{
-			fn_vPrintCFmt(0, "%8p  I %s", pChild, XHIE_fn_szGetSuperObjectPersonalName(pChild));
+			fn_vPrintCFmt(0, "%8p  I %s", pChild, HIE_fn_szGetObjectPersonalName(pChild));
 		}
 	}
 }
@@ -236,11 +236,11 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 	{
 		fn_vPrint("Actors:");
 		HIE_tdstSuperObject *pAct;
-		LST_M_DynamicForEach(*GAM_pp_stDynamicWorld, pAct)
+		LST_M_DynamicForEach(*GAM_g_p_stDynamicWorld, pAct)
 		{
 			if ( pAct->ulType == HIE_C_Type_Actor )
 			{
-				char *pName = XHIE_fn_szGetSuperObjectPersonalName(pAct);
+				char *pName = HIE_fn_szGetObjectPersonalName(pAct);
 				if ( !pName )
 					continue;
 			
@@ -252,11 +252,11 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 				}
 			}
 		}
-		LST_M_DynamicForEach(*GAM_pp_stInactiveDynamicWorld, pAct)
+		LST_M_DynamicForEach(*GAM_g_p_stInactiveDynamicWorld, pAct)
 		{
 			if ( pAct->ulType == HIE_C_Type_Actor )
 			{
-				char *pName = XHIE_fn_szGetSuperObjectPersonalName(pAct);
+				char *pName = HIE_fn_szGetObjectPersonalName(pAct);
 				if ( !pName )
 					continue;
 			
@@ -320,11 +320,11 @@ void fn_vActorCmd( int lNbArgs, char **d_szArgs )
 		return;
 	}
 
-	char *szName = XHIE_fn_szGetSuperObjectPersonalName(pActor);
+	char *szName = HIE_fn_szGetObjectPersonalName(pActor);
 	fn_vPrintCFmt(0, "Actor \"%s\" (%8p):", szName, pActor);
 
-	char *szFamily = XHIE_fn_szGetSuperObjectFamilyName(pActor);
-	char *szModel = XHIE_fn_szGetSuperObjectModelName(pActor);
+	char *szFamily = HIE_fn_szGetObjectFamilyName(pActor);
+	char *szModel = HIE_fn_szGetObjectModelName(pActor);
 	fn_vPrintCFmt(0, "  Family & Model: %s\\%s", szFamily, szModel);
 
 	MTH3D_tdstVector *pPos = &pActor->p_stGlobalMatrix->stPos;
@@ -340,7 +340,7 @@ void fn_vMainActorCmd( int lNbArgs, char **d_szArgs )
 	HIE_tdstSuperObject *pMain = GAM_g_stEngineStructure->g_hMainActor;
 	HIE_tdstSuperObject *pNewMain;
 
-	char *szName = XHIE_fn_szGetSuperObjectPersonalName(pMain);
+	char *szName = HIE_fn_szGetObjectPersonalName(pMain);
 
 	if ( lNbArgs < 1 )
 	{
@@ -357,7 +357,7 @@ void fn_vMainActorCmd( int lNbArgs, char **d_szArgs )
 
 	GAM_g_stEngineStructure->g_hNextMainActor = pNewMain;
 
-	char *szNewName = XHIE_fn_szGetSuperObjectPersonalName(pNewMain);
+	char *szNewName = HIE_fn_szGetObjectPersonalName(pNewMain);
 	fn_vPrintCFmt(0, "Main actor: \"%s\" --> \"%s\"", szName, szNewName);
 }
 
@@ -379,7 +379,7 @@ void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
 		return;
 	}
 
-	char *szName = XHIE_fn_szGetSuperObjectPersonalName(pSpo);
+	char *szName = HIE_fn_szGetObjectPersonalName(pSpo);
 	MTH3D_tdstVector *pPos = &pSpo->p_stGlobalMatrix->stPos;
 
 	g_pvLastCommandData = pSpo;
@@ -395,7 +395,7 @@ void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
 	d_szArgs++;
 	stOldPos = stNewPos = *pPos;
 
-	int lParsed = fn_lParseCoordinates(3, d_szArgs, &stNewPos);
+	int lParsed = fn_lParseCoordinates(3, d_szArgs, (MTH_tdxReal*)&stNewPos);
 	if ( lParsed < 3 )
 	{
 		fn_vPrintCFmt(2, "Invalid argument \"%s\"", d_szArgs[lParsed]);
@@ -410,6 +410,8 @@ void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
 	fn_vPrintCFmt(0, "  New pos:  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
 }
+
+unsigned char g_ucGhostModeCameraWorkaround = 0;
 
 void fn_vTeleportCmd( int lNbArgs, char **d_szArgs )
 {
@@ -429,12 +431,12 @@ void fn_vTeleportCmd( int lNbArgs, char **d_szArgs )
 		return;
 	}
 
-	char *szName = XHIE_fn_szGetSuperObjectPersonalName(pMain);
+	char *szName = HIE_fn_szGetObjectPersonalName(pMain);
 	MTH3D_tdstVector *pPos = &pMain->p_stGlobalMatrix->stPos;
 
 	stOldPos = stNewPos = *pPos;
 
-	int lParsed = fn_lParseCoordinates(3, d_szArgs, &stNewPos);
+	int lParsed = fn_lParseCoordinates(3, d_szArgs, (MTH_tdxReal*)&stNewPos);
 	if ( lParsed < 3 )
 	{
 		fn_vPrintCFmt(2, "Invalid argument \"%s\"", d_szArgs[lParsed]);
@@ -443,6 +445,8 @@ void fn_vTeleportCmd( int lNbArgs, char **d_szArgs )
 
 	pMain->p_stLocalMatrix->stPos = pMain->p_stGlobalMatrix->stPos = stNewPos;
 	pMain->hLinkedObject.p_stCharacter->hDynam->p_stDynamics->stDynamicsBase.ulEndFlags |= 0x00000080;
+
+	g_ucGhostModeCameraWorkaround = 2;
 
 	fn_vPrintCFmt(0, "Teleporting \"%s\":", szName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
@@ -473,14 +477,16 @@ void fn_vTeleportToCmd( int lNbArgs, char **d_szArgs )
 		return;
 	}
 
-	char *szName = XHIE_fn_szGetSuperObjectPersonalName(pMain);
-	char *szDestName = XHIE_fn_szGetSuperObjectPersonalName(pDest);
+	char *szName = HIE_fn_szGetObjectPersonalName(pMain);
+	char *szDestName = HIE_fn_szGetObjectPersonalName(pDest);
 
 	MTH3D_tdstVector *pPos = &pMain->p_stGlobalMatrix->stPos;
 	stOldPos = *pPos;
 
 	pMain->p_stLocalMatrix->stPos = pMain->p_stGlobalMatrix->stPos = pDest->p_stGlobalMatrix->stPos;
 	pMain->hLinkedObject.p_stCharacter->hDynam->p_stDynamics->stDynamicsBase.ulEndFlags |= 0x00000080;
+
+	g_ucGhostModeCameraWorkaround = 2;
 
 	fn_vPrintCFmt(0, "Teleporting \"%s\" to \"%s\":", szName, szDestName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);

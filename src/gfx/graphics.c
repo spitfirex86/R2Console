@@ -33,13 +33,13 @@ void GFX_fn_vDisplayFrameWithZValue(
 	GLD_tdstViewportAttributes *p_stViewport
 	)
 {
-	MTH_tdxReal xSaveZValue = *GLI_p_fZValueForSprite;
-	*GLI_p_fZValueForSprite = xZValue;
+	MTH_tdxReal xSaveZValue = *GLI_g_fZValueForSprite;
+	*GLI_g_fZValueForSprite = xZValue;
 
-	*GLI_p_bForceAAAColor = 0;
+	*GLI_g_bForceAAAColor = 0;
 	GLI_vDisplayFrame(p_stTopLeft, p_stBottomRight, xAlpha, p_stViewport);
 
-	*GLI_p_fZValueForSprite = xSaveZValue;
+	*GLI_g_fZValueForSprite = xSaveZValue;
 }
 
 void GFX_fn_vDraw2DSpriteWithZValueAndAlpha(
@@ -51,21 +51,21 @@ void GFX_fn_vDraw2DSpriteWithZValueAndAlpha(
 	GLD_tdstViewportAttributes *p_stViewport
 	)
 {
-	MTH_tdxReal xSaveZValue = *GLI_p_fZValueForSprite;
+	MTH_tdxReal xSaveZValue = *GLI_g_fZValueForSprite;
 	MTH_tdxReal xSaveAlpha = GLI_fn_xGetGlobalAlpha();
 	GEO_tdstColor stSaveAmbient = hMaterial->stAmbient;
 
-	*GLI_p_fZValueForSprite = xZValue;
+	*GLI_g_fZValueForSprite = xZValue;
 	GLI_vSetGlobalAlpha(xAlpha);
 
-	*GLI_p_bForceAAAColor = 0;
+	*GLI_g_bForceAAAColor = 0;
 	hMaterial->stAmbient.xR = hMaterial->stAmbient.xG = hMaterial->stAmbient.xB = 0.8f;
 
 	GLI_vDraw2DSpriteWithPercent(p_stViewport, p_stTopLeft->x, p_stTopLeft->y, p_stBottomRight->x, p_stBottomRight->y,
 								 hMaterial);
 
 	hMaterial->stAmbient = stSaveAmbient;
-	*GLI_p_fZValueForSprite = xSaveZValue;
+	*GLI_g_fZValueForSprite = xSaveZValue;
 	GLI_vSetGlobalAlpha(xSaveAlpha);
 }
 
@@ -124,8 +124,18 @@ void GFX_fn_vDraw2DSpriteWithUV(
 	(*GLI_BIG_GLOBALS)->lHierachDrawMask = 0xFFFFFFFF - GLI_C_Mat_lIsTestingBackface;
 
 	GLI_vDoMaterialSelection(*GLI_BIG_GLOBALS);
+
+	if ( GLI_g_bForceAAAColor )
+	{
+		/* Keep computed alpha */
+		(*GLI_BIG_GLOBALS)->ulColorInitForSprite &= 0xff000000;
+		/* Force color */
+		(*GLI_BIG_GLOBALS)->ulColorInitForSprite |=
+			GLI_a3_ForcedAAAColor[0] << 16 | GLI_a3_ForcedAAAColor[1] << 8 | GLI_a3_ForcedAAAColor[2];
+	}
+
 	//GLI_DRV_vSendSpriteToClipWithUV ( a4_st2DVertex ,a4_stUVVertex ,1.0f / GLI_C_xZClippingNear,GLI_BIG_GLOBALS);
-	(*GLI_DRV_vSendSpriteToClipWithUV)(a4_st2DVertex, a4_stUVVertex, *GLI_p_fZValueForSprite, *GLI_BIG_GLOBALS);
+	(*GLI_DRV_vSendSpriteToClipWithUV)(a4_st2DVertex, a4_stUVVertex, *GLI_g_fZValueForSprite, *GLI_BIG_GLOBALS);
 }
 
 
@@ -241,4 +251,19 @@ GLI_tdstMaterial * GFX_fn_hCreateMaterialWithTexture( GLI_tdstTexture *p_stTextu
 	GLI_xSetMaterialTexture(hMaterial, p_stTexture);
 
 	return hMaterial;
+}
+
+void GFX_fn_vSetForcedColor( ACP_tdxBool bForce, unsigned char const *a3_Color )
+{
+	if ( bForce )
+	{
+		*GLI_g_bForceAAAColor = 1;
+		GLI_a3_ForcedAAAColor[0] = a3_Color[0];
+		GLI_a3_ForcedAAAColor[1] = a3_Color[1];
+		GLI_a3_ForcedAAAColor[2] = a3_Color[2];
+	}
+	else
+	{
+		*GLI_g_bForceAAAColor = 0;
+	}
 }

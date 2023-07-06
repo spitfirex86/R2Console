@@ -159,7 +159,7 @@ BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut )
 
 	if ( fn_bParsePtr(szArg, &pTmp) )
 	{
-		HIE_tdstSuperObject *pRoot = *GAM_pp_stDynamicWorld;
+		HIE_tdstSuperObject *pRoot = *GAM_g_p_stDynamicWorld;
 		HIE_tdstSuperObject *pChild;
 		LST_M_DynamicForEach(pRoot, pChild)
 		{
@@ -172,7 +172,7 @@ BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut )
 	}
 	else
 	{
-		pSuperObj = XHIE_fn_p_stFindSuperObjectByName(szArg);
+		pSuperObj = HIE_fn_p_stFindObjectByName(szArg);
 	}
 
 	if ( !pSuperObj )
