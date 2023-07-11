@@ -36,6 +36,7 @@ extern char const g_szVersion[];
 extern tdstLine g_a_stLines[C_NbLines];
 
 
+void fn_vEarlyInitConsole( void );
 void fn_vInitConsole( void );
 
 void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix );

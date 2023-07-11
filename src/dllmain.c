@@ -5,18 +5,16 @@
 
 void fn_vAttachHooks( void )
 {
-	FHK_fn_lCreateHook((void **)&GAM_fn_WndProc, (void *)MOD_WndProc);
-	FHK_fn_lCreateHook((void **)&GAM_fn_vEngine, (void *)MOD_fn_vEngine);
-	FHK_fn_lCreateHook((void **)&AGO_vDisplayGAUGES, (void *)MOD_AGO_vDisplayGAUGES);
-	FHK_fn_lCreateHook((void **)&GLI_vComputeTextures, (void *)MOD_GLI_vComputeTextures);
+	FHK_M_lCreateHook(&GAM_fn_WndProc, MOD_WndProc);
+	FHK_M_lCreateHook(&GAM_fn_vEngine, MOD_fn_vEngine);
+	FHK_M_lCreateHook(&AGO_vDisplayGAUGES, MOD_AGO_vDisplayGAUGES);
 }
 
 void fn_vDetachHooks( void )
 {
-	FHK_fn_lDestroyHook((void **)&GAM_fn_WndProc, (void *)MOD_WndProc);
-	FHK_fn_lDestroyHook((void **)&GAM_fn_vEngine, (void *)MOD_fn_vEngine);
-	FHK_fn_lDestroyHook((void **)&AGO_vDisplayGAUGES, (void *)MOD_AGO_vDisplayGAUGES);
-	FHK_fn_lDestroyHook((void **)&GLI_vComputeTextures, (void *)MOD_GLI_vComputeTextures);
+	FHK_M_lDestroyHook(&GAM_fn_WndProc, MOD_WndProc);
+	FHK_M_lDestroyHook(&GAM_fn_vEngine, MOD_fn_vEngine);
+	FHK_M_lDestroyHook(&AGO_vDisplayGAUGES, MOD_AGO_vDisplayGAUGES);
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule, DWORD dwReason, LPVOID lpReserved )
@@ -25,7 +23,7 @@ BOOL APIENTRY DllMain( HMODULE hModule, DWORD dwReason, LPVOID lpReserved )
 	{
 		case DLL_PROCESS_ATTACH:
 			fn_vAttachHooks();
-			//fn_vInitConsole();
+			fn_vEarlyInitConsole();
 			break;
 
 		case DLL_PROCESS_DETACH:

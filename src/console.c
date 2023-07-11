@@ -620,6 +620,14 @@ void fn_vInitVars( void )
 	CON_bEnterHides->bValue = FALSE;
 }
 
+void fn_vEarlyInitConsole( void )
+{
+	TXM_fn_vInit();
+
+	FNT_fn_vLoadFontTexture();
+	CUR_fn_vLoadCursorTexture();
+}
+
 void fn_vInitConsole( void )
 {
 	FNT_fn_vFontInit();
@@ -632,21 +640,11 @@ void fn_vInitConsole( void )
 	g_bIsInit = TRUE;
 }
 
-
-void MOD_GLI_vComputeTextures( void )
-{
-	FNT_fn_vLoadFontTexture();
-	CUR_fn_vLoadCursorTexture();
-
-	GLI_vComputeTextures();
-}
-
 void MOD_AGO_vDisplayGAUGES( GLD_tdstViewportAttributes *p_stVpt )
 {
 	AGO_vDisplayGAUGES(p_stVpt);
 
 	g_pstMouseOverWord = fn_p_stHiLiteFindWord();
-	CUR_fn_vInvalidateCursor();
 	CUR_fn_vSetCursorCxt(g_pstMouseOverWord != NULL);
 	fn_vDrawConsole();
 }

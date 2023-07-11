@@ -3,7 +3,7 @@
 #include "graphics.h"
 
 
-GLI_tdstTexture g_stFontTex = { 0 };
+GLI_tdstTexture *g_pstFontTex = NULL;
 GLI_tdstMaterial g_stFontMat = { 0 };
 
 MTH2D_tdstVector g_stPixelSize = { 0, 0 };
@@ -116,18 +116,12 @@ void FNT_fn_vFontInit( void )
 
 void FNT_fn_vLoadFontTexture( void )
 {
-	static BOOL s_bIsFontInit = FALSE;
-	if ( !s_bIsFontInit )
-	{
-		/* font texture init */
-		GLI_fn_bReadTextureGF(&g_stFontTex, "Font10x12.tga");
-		g_stFontTex.lTextureQuality = GLI_C_TEX_QHIGH;
+	if ( g_pstFontTex )
+		TXM_fn_bUnLoadTexture(g_pstFontTex);
 
-		GLI_fn_vInitMaterialDefaults(&g_stFontMat);
-		GLI_xSetMaterialTexture(&g_stFontMat, &g_stFontTex);
+	g_pstFontTex = TXM_fn_hLoadTextureGF("Font10x12.tga");
+	g_pstFontTex->lTextureQuality = GLI_C_TEX_QHIGH;
 
-		s_bIsFontInit = TRUE;
-	}
-
-	GLI_fn_vLoadTextureInTable(&g_stFontTex);
+	GLI_fn_vInitMaterialDefaults(&g_stFontMat);
+	GLI_xSetMaterialTexture(&g_stFontMat, g_pstFontTex);
 }
