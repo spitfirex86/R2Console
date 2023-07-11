@@ -15,12 +15,23 @@ MTH2D_tdstVector g_stCurSize = { 2.25f, 3.0f };
 
 void CUR_fn_vLoadCursorTexture( void )
 {
-	GFX_fn_vLoadTexture(&g_stCursorTex, "curseur_nz.tga");
-	GFX_fn_vLoadTexture(&g_stCursorCxtTex, "curseur_nz_drag.tga");
-	GLI_xSetMaterialTexture(&g_stCursorMat, &g_stCursorTex);
+	static BOOL s_bCursorInit = FALSE;
 
-	g_stCursorMat.ulMaterialType |= GLI_C_Mat_lTexturedElement;
-	g_stCursorMat.stAmbient.xR = g_stCursorMat.stAmbient.xG = g_stCursorMat.stAmbient.xB = 1.0f;
+	if ( !s_bCursorInit )
+	{
+		/* cursor texture init */
+		GLI_fn_bReadTextureGF(&g_stCursorTex, "curseur_nz.tga");
+		GLI_fn_bReadTextureGF(&g_stCursorCxtTex, "curseur_nz_drag.tga");
+
+		GLI_fn_vInitMaterialDefaults(&g_stCursorMat);
+		GLI_xSetMaterialTexture(&g_stCursorMat, &g_stCursorTex);
+		g_stCursorMat.stAmbient.xR = g_stCursorMat.stAmbient.xG = g_stCursorMat.stAmbient.xB = 0.8f;
+
+		s_bCursorInit = TRUE;
+	}
+
+	GLI_fn_vLoadTextureInTable(&g_stCursorTex);
+	GLI_fn_vLoadTextureInTable(&g_stCursorCxtTex);
 
 	g_bIsCursorTexValid = TRUE;
 }
@@ -36,8 +47,8 @@ void CUR_fn_vDrawCursor( void )
 	if ( g_bIsCursorTexValid )
 	{
 		GFX_fn_vAdd2DVector(&g_stCurB, &g_stCurA, &g_stCurSize);
-		GFX_fn_vDraw2DSpriteWithZValueAndAlpha(&g_stCurA, &g_stCurB, 0xFF, 1.111f, &g_stCursorMat,
-											   &GAM_g_stEngineStructure->stFixViewportAttr);
+		GLI_fn_vSetForcedColor(NULL);
+		GLI_fn_vDraw2DSpriteWithZValueAndAlpha(&g_stCurA, &g_stCurB, 0xFF, 1.111f, &g_stCursorMat);
 	}
 }
 

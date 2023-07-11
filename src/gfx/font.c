@@ -30,8 +30,6 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 	MTH_tdxReal u, v;
 	int lOffset = 0;
 
-	GLD_tdstViewportAttributes *p_stVpt = &GAM_g_stEngineStructure->stFixViewportAttr;
-
 	x = xX = xX * g_stPixelSize.x;
 	dx = C_Font_xCharWidth * g_stPixelSize.x;
 	dx2 = C_Font_xActualCharWidth * g_stPixelSize.x;
@@ -39,7 +37,7 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 	dy = C_Font_xCharHeight * g_stPixelSize.y;
 
 	/* set default color */
-	GFX_fn_vSetForcedColor(TRUE, g_a_a3_Colors[0]);
+	GLI_fn_vSetForcedColor(g_a_a3_Colors[0]);
 
 	while ( (*szString) > 0 )
 	{
@@ -64,7 +62,7 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 			if ( lColor >= lNbColors )
 				lColor = 0;
 
-			GFX_fn_vSetForcedColor(TRUE, g_a_a3_Colors[lColor]);
+			GLI_fn_vSetForcedColor(g_a_a3_Colors[lColor]);
 
 			szString++;
 			continue;
@@ -81,14 +79,14 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 			u = ((float)lCharX * (C_Font_xCharWidth + 2.0f) + 2.15f) / (C_Font_xTexWidth-1.0f);
 			v = 1.0f - ((float)lCharY * (C_Font_xCharHeight + 2.0f) + 1.15f) / (C_Font_xTexHeight-1.0f);
 
-			GFX_fn_vDraw2DSpriteWithUV(p_stVpt, x, x+dx, y, y+dy, u, u+C_Font_xCharU, v, v-C_Font_XCharV, &g_stFontMat);
+			GLI_fn_vDraw2DSpriteWithUV(x, x+dx, y, y+dy, u, u+C_Font_xCharU, v, v-C_Font_XCharV, &g_stFontMat);
 		}
 
 		x += dx2;
 		szString++;
 	}
 
-	GFX_fn_vSetForcedColor(FALSE, NULL);
+	GLI_fn_vSetForcedColor(NULL);
 }
 
 void FNT_fn_vDisplayStringFmt( MTH_tdxReal xX, MTH_tdxReal xY, char const *szFmt, ... )
@@ -110,18 +108,26 @@ void FNT_fn_vDisplayStringFmt( MTH_tdxReal xX, MTH_tdxReal xY, char const *szFmt
 
 void FNT_fn_vFontInit( void )
 {
+	/* pixel size */
 	GLD_tdstViewportAttributes *p_stVpt = &GAM_g_stEngineStructure->stFixViewportAttr;
-
 	g_stPixelSize.x = 1.0f / 640.0f * (float)p_stVpt->dwWidth;
 	g_stPixelSize.y = 1.0f / 480.0f * (float)p_stVpt->dwHeight;
 }
 
 void FNT_fn_vLoadFontTexture( void )
 {
-	GFX_fn_vLoadTexture(&g_stFontTex, "Font10x12.tga");
-	g_stFontTex.lTextureQuality = GLI_C_TEX_QHIGH;
+	static BOOL s_bIsFontInit = FALSE;
+	if ( !s_bIsFontInit )
+	{
+		/* font texture init */
+		GLI_fn_bReadTextureGF(&g_stFontTex, "Font10x12.tga");
+		g_stFontTex.lTextureQuality = GLI_C_TEX_QHIGH;
 
-	GLI_xSetMaterialTexture(&g_stFontMat, &g_stFontTex);
-	g_stFontMat.ulMaterialType |= GLI_C_Mat_lTexturedElement;
-	g_stFontMat.stAmbient.xR = g_stFontMat.stAmbient.xG = g_stFontMat.stAmbient.xB = 1.0f;
+		GLI_fn_vInitMaterialDefaults(&g_stFontMat);
+		GLI_xSetMaterialTexture(&g_stFontMat, &g_stFontTex);
+
+		s_bIsFontInit = TRUE;
+	}
+
+	GLI_fn_vLoadTextureInTable(&g_stFontTex);
 }
