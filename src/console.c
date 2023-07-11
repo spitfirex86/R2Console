@@ -60,6 +60,7 @@ tdstCVar *CON_bEnterHides = NULL;
 /* highlighted word */
 long g_lMouseOverLine = -1;
 long g_lMouseOverChar = -1;
+tdstHiLite *g_pstMouseOverWord = NULL;
 
 
 void fn_vAnimOneStep( void )
@@ -128,7 +129,7 @@ void fn_vDrawConsole( void )
 
 		if ( i == g_lMouseOverLine )
 		{
-			tdstHiLite *pHiLite = fn_p_stHiLiteFindWord();
+			tdstHiLite *pHiLite = g_pstMouseOverWord;
 			if ( pHiLite )
 			{
 				char *pTmp = szTmp;
@@ -644,7 +645,9 @@ void MOD_AGO_vDisplayGAUGES( GLD_tdstViewportAttributes *p_stVpt )
 {
 	AGO_vDisplayGAUGES(p_stVpt);
 
+	g_pstMouseOverWord = fn_p_stHiLiteFindWord();
 	CUR_fn_vInvalidateCursor();
+	CUR_fn_vSetCursorCxt(g_pstMouseOverWord != NULL);
 	fn_vDrawConsole();
 }
 

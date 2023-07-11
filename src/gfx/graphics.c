@@ -95,6 +95,7 @@ void GFX_fn_vDraw2DSpriteWithUV(
 	hMaterial->stDiffuse = stLocalColor;
 	stLocalColor.xG = stLocalColor.xB = stLocalColor.xR = 0.0f;
 	hMaterial->stSpecular = stLocalColor;
+	hMaterial->lSpecularExponent = 0;
 
 	a4_st2DVertex[0].xX = (float)(long)xXMin;
 	a4_st2DVertex[0].xY = (float)(long)xYMin;
