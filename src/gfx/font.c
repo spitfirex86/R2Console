@@ -56,12 +56,9 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 		}*/
 		if ( FNT_M_bCharIsColor(*szString) )
 		{
-			int lNbColors = ARRAYSIZE(g_a_a3_Colors);
-			int lColor = FNT_M_lCharToColor(*szString);
-
-			if ( lColor >= lNbColors )
-				lColor = 0;
-
+			int lColor = FNT_M_lCharToColor(*szString) % ARRAYSIZE(g_a_a3_Colors);
+			/*if ( lColor >= ARRAYSIZE(g_a_a3_Colors) )
+				lColor = 0;*/
 			GLI_fn_vSetForcedColor(g_a_a3_Colors[lColor]);
 
 			szString++;
@@ -69,7 +66,6 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 		}
 
 		char ch = (*szString) - ' ';
-
 		if ( ch > 0 )
 		{
 			int lCharX = ch % 16;

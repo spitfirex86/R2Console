@@ -93,3 +93,17 @@ BOOL fn_bParsePtr( char *szArg, void **p_pOut );
 BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
 
 void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd );
+
+
+typedef enum tdeTimerId
+{
+	e_Timer_Null,
+	e_Timer_PerfCmd,
+
+	e_Nb_Timer
+}
+tdeTimerId;
+
+void fn_vInitTimer( void );
+void fn_vResetTimer( tdeTimerId eId );
+float fn_xGetTimerElapsed( tdeTimerId eId );

@@ -2,6 +2,37 @@
 #include "console.h"
 
 
+LARGE_INTEGER g_llFreq;
+LARGE_INTEGER g_a_llTimers[e_Nb_Timer];
+
+
+void fn_vInitTimer( void )
+{
+	QueryPerformanceFrequency(&g_llFreq);
+	fn_vResetTimer(e_Timer_Null);
+}
+
+void fn_vResetTimer( tdeTimerId eId )
+{
+	if ( eId < 0 || eId >= e_Nb_Timer )
+		return;
+
+	QueryPerformanceCounter(&g_a_llTimers[eId]);
+}
+
+float fn_xGetTimerElapsed( tdeTimerId eId )
+{
+	LARGE_INTEGER llElapsed;
+
+	if ( eId < 0 || eId >= e_Nb_Timer )
+		return 0;
+
+	QueryPerformanceCounter(&llElapsed);
+	float xElapsedMs = (float)(llElapsed.QuadPart - g_a_llTimers[eId].QuadPart) * 1000.0f / (float)g_llFreq.QuadPart;
+	return xElapsedMs;
+}
+
+
 int fn_lSplitArgs( char *szString, char ***p_d_szArgsOut )
 {
 	int lCount = 0;

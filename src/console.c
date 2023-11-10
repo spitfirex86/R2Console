@@ -8,7 +8,7 @@
 #include "ext/ghost.h"
 
 
-char const g_szVersion[] = "R2Console v1.2 (" __DATE__ ")";
+char const g_szVersion[] = "R2Console v1.2 (" __DATE__ " " __TIME__ ")";
 
 BOOL g_bIsInit = FALSE;
 BOOL g_bShow = FALSE;
@@ -56,6 +56,7 @@ BOOL g_bForceThisCommand = FALSE;
 /* console vars */
 tdstCVar *CON_bPauseGame = NULL;
 tdstCVar *CON_bEnterHides = NULL;
+tdstCVar *CON_bPerfCmd = NULL;
 
 /* highlighted word */
 long g_lMouseOverLine = -1;
@@ -313,6 +314,8 @@ void fn_vParseCommand( char *szString )
 	char szArgs[C_MaxLine];
 	char **d_szArgs = NULL;
 
+	BOOL bPerfCmd = CON_bPerfCmd->bValue;
+
 	szString += strspn(szString, " ");
 	int length = strcspn(szString, " ");
 
@@ -331,6 +334,9 @@ void fn_vParseCommand( char *szString )
 	strncpy(szCommand, szString, length);
 	szCommand[length] = 0;
 
+	if ( bPerfCmd )
+		fn_vResetTimer(e_Timer_PerfCmd);
+
 	for ( int i = 0; i < g_lNbCommands; i++ )
 	{
         if ( _stricmp(szCommand, g_a_stCommands[i].szName) == 0 )
@@ -340,6 +346,12 @@ void fn_vParseCommand( char *szString )
 
             g_a_stCommands[i].p_stCommand(lCount, d_szArgs);
 			g_lLastCommandId = i;
+
+			if ( bPerfCmd )
+			{
+				float xTimeExec = fn_xGetTimerElapsed(e_Timer_PerfCmd);
+				fn_vPrintCFmt(2, "--> (PERF: %.3f ms exec)", xTimeExec);
+			}
 
 			free(d_szArgs);
             return;
@@ -618,10 +630,15 @@ void fn_vInitVars( void )
 
 	CON_bEnterHides = fn_p_stCreateCVar("Con_EnterHides", E_CVarBool);
 	CON_bEnterHides->bValue = FALSE;
+
+	CON_bPerfCmd = fn_p_stCreateCVar("Con_PerfCmd", E_CVarBool);
+	CON_bPerfCmd->bValue = FALSE;
 }
 
 void fn_vEarlyInitConsole( void )
 {
+	fn_vInitTimer();
+
 	TXM_fn_vInit();
 
 	FNT_fn_vLoadFontTexture();
