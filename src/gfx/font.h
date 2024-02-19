@@ -11,6 +11,9 @@
 #define C_Font_xCharWidth	10.0f
 #define C_Font_xCharHeight	12.0f
 
+#define C_Font_xCharWidthInPercent	M_FontToPercentX(C_Font_xCharWidth)
+#define C_Font_xCharHeightInPercent	M_FontToPercentY(C_Font_xCharHeight)
+
 #define C_Font_xTexWidth	256.0f
 #define C_Font_xTexHeight	128.0f
 

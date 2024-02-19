@@ -91,11 +91,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\console.h" />
+    <ClInclude Include="src\ext\freeze.h" />
     <ClInclude Include="src\gfx\cursor.h" />
     <ClInclude Include="src\cvars.h" />
     <ClInclude Include="src\gfx\font.h" />
     <ClInclude Include="src\framework.h" />
     <ClInclude Include="src\ext\ghost.h" />
+    <ClInclude Include="src\pick.h" />
     <ClInclude Include="src\r2ptr.h" />
     <ClInclude Include="src\gfx\graphics.h" />
     <ClInclude Include="src\ext\watch.h" />
@@ -103,12 +105,14 @@
   <ItemGroup>
     <ClCompile Include="src\commands.c" />
     <ClCompile Include="src\console.c" />
+    <ClCompile Include="src\ext\freeze.c" />
     <ClCompile Include="src\gfx\cursor.c" />
     <ClCompile Include="src\cvars.c" />
     <ClCompile Include="src\dllmain.c" />
     <ClCompile Include="src\gfx\font.c" />
     <ClCompile Include="src\ext\ghost.c" />
     <ClCompile Include="src\gfx\graphics.c" />
+    <ClCompile Include="src\pick.c" />
     <ClCompile Include="src\utils.c" />
     <ClCompile Include="src\ext\watch.c" />
   </ItemGroup>

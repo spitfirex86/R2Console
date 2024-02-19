@@ -2,6 +2,7 @@
 #include "console.h"
 #include "cvars.h"
 #include "ext/ghost.h"
+#include "ext/freeze.h"
 
 
 tdfnCommand fn_vHelpCmd;
@@ -20,6 +21,8 @@ tdfnCommand fn_vGhostCmd;
 tdfnCommand fn_vCVarCmd;
 tdfnCommand fn_vActorCmd;
 tdfnCommand fn_vMainActorCmd;
+tdfnCommand fn_vWireframeCmd;
+tdfnCommand fn_vBrightnessCmd;
 
 
 tdstCommand g_a_stCommands[] = {
@@ -37,7 +40,10 @@ tdstCommand g_a_stCommands[] = {
 #if defined(USE_WATCH)
 	{ "watch", WAT_fn_vWatchCmd },
 #endif
+	{ "freeze", FRZ_fn_vFreezeCmd },
 	{ "cvar", fn_vCVarCmd },
+	{ "wireframe", fn_vWireframeCmd },
+	{ "bright", fn_vBrightnessCmd },
 	{ "clear", fn_vClearCmd },
 	{ "help", fn_vHelpCmd },
 	{ "version", fn_vVersionCmd },
@@ -47,9 +53,13 @@ tdstCommand g_a_stCommands[] = {
 int const g_lNbCommands = ARRAYSIZE(g_a_stCommands);
 
 
-void fn_vHelpCmd( int lNbArgs, char  **d_szArgs )
+void fn_vHelpCmd( int lNbArgs, char **d_szArgs )
 {
-	char szBuffer[256] = "Available commands:\n";
+	char *szBuffer = _alloca((g_lNbCommands * C_MaxCmdName) + 32);
+	if ( !szBuffer )
+		return;
+
+	strcpy(szBuffer, "Available commands:\n");
 	char *pStr = szBuffer + strlen(szBuffer);
 	int lBuf = 0;
 
@@ -64,7 +74,7 @@ void fn_vHelpCmd( int lNbArgs, char  **d_szArgs )
 			lBuf = 0;
 		}
 
-	    strcpy(pStr+lBuf, g_a_stCommands[i].szName);
+		strcpy(pStr+lBuf, g_a_stCommands[i].szName);
 		lBuf += lCmd;
 		pStr[lBuf++] = ' ';
 	}
@@ -82,10 +92,10 @@ void fn_vClearCmd( int lNbArgs, char **d_szArgs )
 
 void fn_vMapCmd( int lNbArgs, char **d_szArgs )
 {
-    if ( lNbArgs < 1 )
+	if ( lNbArgs < 1 )
 	{
 		fn_vPrint("Usage: map [name]");
-		fn_vPrintCFmt(0, "Current map: \002%s\003", GAM_g_stEngineStructure->szLevelName);
+		fn_vPrintCFmt(0, "Current map: " M_HiLite("%s"), GAM_g_stEngineStructure->szLevelName);
 		return;
 	}
 
@@ -96,7 +106,7 @@ void fn_vMapCmd( int lNbArgs, char **d_szArgs )
 		char *szMap = GAM_g_stEngineStructure->a_szLevelName[i];
 		if ( _stricmp(szName, szMap) == 0 )
 		{
-			fn_vPrintCFmt(0, "Changing map: \"\002%s\003\" --> \"\002%s\003\"", GAM_g_stEngineStructure->szLevelName, szMap);
+			fn_vPrintCFmt(0, "Changing map: " M_HiLite("%s") " --> " M_HiLite("%s"), GAM_g_stEngineStructure->szLevelName, szMap);
 			GAM_fn_vAskToChangeLevel(szMap, FALSE);
 			return;
 		}
@@ -108,7 +118,7 @@ void fn_vMapCmd( int lNbArgs, char **d_szArgs )
 void fn_vReinitCmd( int lNbArgs, char **d_szArgs )
 {
 	fn_vPrint("Reloading current map");
-    GAM_fn_vChangeEngineMode(E_EM_ModePlayerDead);
+	GAM_fn_vChangeEngineMode(E_EM_ModePlayerDead);
 }
 
 void fn_vListObjCmd( int lNbArgs, char **d_szArgs )
@@ -146,14 +156,13 @@ void fn_vListObjCmd( int lNbArgs, char **d_szArgs )
 		{
 			if( !(pChild->hLinkedObject.p_stCharacter->hStandardGame->ulCustomBits & Std_C_CustBit_OutOfVisibility) )
 			{
-				fn_vPrintCFmt(0, "\002%8p\003  V \002%s\003", pChild, HIE_fn_szGetObjectPersonalName(pChild));
+				fn_vPrintCFmt(0, "" M_HiLite("%8p") "  V " M_HiLite("%s"), pChild, HIE_fn_szGetObjectPersonalName(pChild));
 			}
 			else
 			{
 				if ( bOnlyVisible )
 					continue;
-
-				fn_vPrintCFmt(0, "\002%8p\003    \002%s\003", pChild, HIE_fn_szGetObjectPersonalName(pChild));
+				fn_vPrintCFmt(0, "" M_HiLite("%8p") "    " M_HiLite("%s"), pChild, HIE_fn_szGetObjectPersonalName(pChild));
 			}
 		}
 	}
@@ -165,7 +174,7 @@ void fn_vListObjCmd( int lNbArgs, char **d_szArgs )
 	{
 		if ( pChild->ulType == HIE_C_Type_Actor )
 		{
-			fn_vPrintCFmt(0, "\002%8p\003  I \002%s\003", pChild, HIE_fn_szGetObjectPersonalName(pChild));
+			fn_vPrintCFmt(0, M_HiLite("%8p") "  I " M_HiLite("%s"), pChild, HIE_fn_szGetObjectPersonalName(pChild));
 		}
 	}
 }
@@ -191,7 +200,7 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 	if ( lNbArgs < 1 )
 	{
 		fn_vPrint(szUsage);
-        return;
+		return;
 	}
 
 	if ( lNbArgs > 1 && *d_szArgs[0] == '-' )
@@ -225,7 +234,7 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 			if ( strstr(szName, szFind) )
 			{
 				lFoundMap++;
-				fn_vPrintCFmt(0, "  \002%s\003", GAM_g_stEngineStructure->a_szLevelName[i]);
+				fn_vPrintCFmt(0, "  " M_HiLite("%s"), GAM_g_stEngineStructure->a_szLevelName[i]);
 			}
 		}
 		if ( !lFoundMap )
@@ -248,7 +257,7 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 				if ( strstr(szName, szFind) )
 				{
 					lFoundAct++;
-					fn_vPrintCFmt(0, "  \002%8p\003    \002%s\003", pAct, pName);
+					fn_vPrintCFmt(0, "  " M_HiLite("%8p") "    " M_HiLite("%s"), pAct, pName);
 				}
 			}
 		}
@@ -264,7 +273,7 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 				if ( strstr(szName, szFind) )
 				{
 					lFoundAct++;
-					fn_vPrintCFmt(0, "  \002%8p\003  I \002%s\003", pAct, pName);
+					fn_vPrintCFmt(0, "  " M_HiLite("%8p") "  I " M_HiLite("%s"), pAct, pName);
 				}
 			}
 		}
@@ -281,7 +290,7 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 			if ( strstr(szName, szFind) )
 			{
 				lFoundVar++;
-				fn_vPrintCFmt(0, "  \002%s\003", g_d_pstCVars[i]->szName);
+				fn_vPrintCFmt(0, "  " M_HiLite("%s"), g_d_pstCVars[i]->szName);
 			}
 		}
 
@@ -345,7 +354,7 @@ void fn_vMainActorCmd( int lNbArgs, char **d_szArgs )
 	if ( lNbArgs < 1 )
 	{
 		fn_vPrint("Usage: mainactor [ref]");
-		fn_vPrintCFmt(0, "Current main actor: \"\002%s\003\" (%8p)", szName, pMain);
+		fn_vPrintCFmt(0, "Current main actor: \"" M_HiLite("%s") "\" (%8p)", szName, pMain);
 		return;
 	}
 
@@ -358,7 +367,7 @@ void fn_vMainActorCmd( int lNbArgs, char **d_szArgs )
 	GAM_g_stEngineStructure->g_hNextMainActor = pNewMain;
 
 	char *szNewName = HIE_fn_szGetObjectPersonalName(pNewMain);
-	fn_vPrintCFmt(0, "Main actor: \"\002%s\003\" --> \"%s\"", szName, szNewName);
+	fn_vPrintCFmt(0, "Main actor: \"" M_HiLite("%s") "\" --> \"" M_HiLite("%s") "\"", szName, szNewName);
 }
 
 void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
@@ -387,7 +396,7 @@ void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
 	// just print the position
 	if ( lNbArgs < 4 )
 	{
-		fn_vPrintCFmt(0, "\002%s\003 :  X: %.3f  Y: %.3f  Z: %.3f", szName, pPos->x, pPos->y, pPos->z);
+		fn_vPrintCFmt(0, "" M_HiLite("%s") " :  X: %.3f  Y: %.3f  Z: %.3f", szName, pPos->x, pPos->y, pPos->z);
 		return;
 	}
 
@@ -406,7 +415,7 @@ void fn_vGetSetPosCmd( int lNbArgs, char **d_szArgs )
 	pSpo->p_stLocalMatrix->stPos = pSpo->p_stGlobalMatrix->stPos = stNewPos;
 	pSpo->hLinkedObject.p_stCharacter->hDynam->p_stDynamics->stDynamicsBase.ulEndFlags |= 0x00000080;
 
-	fn_vPrintCFmt(0, "Changing position of \"\002%s\003\":", szName);
+	fn_vPrintCFmt(0, "Changing position of \"" M_HiLite("%s") "\":", szName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
 	fn_vPrintCFmt(0, "  New pos:  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
 }
@@ -448,7 +457,7 @@ void fn_vTeleportCmd( int lNbArgs, char **d_szArgs )
 
 	g_ucGhostModeCameraWorkaround = 2;
 
-	fn_vPrintCFmt(0, "Teleporting \"\002%s\003\":", szName);
+	fn_vPrintCFmt(0, "Teleporting \"" M_HiLite("%s") "\":", szName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
 	fn_vPrintCFmt(0, "  New pos:  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
 }
@@ -488,7 +497,7 @@ void fn_vTeleportToCmd( int lNbArgs, char **d_szArgs )
 
 	g_ucGhostModeCameraWorkaround = 2;
 
-	fn_vPrintCFmt(0, "Teleporting \"\002%s\003\" to \"\002%s\003\":", szName, szDestName);
+	fn_vPrintCFmt(0, "Teleporting \"" M_HiLite("%s") "\" to \"" M_HiLite("%s") "\":", szName, szDestName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
 	fn_vPrintCFmt(0, "  New pos:  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
 }
@@ -536,7 +545,7 @@ void fn_vCVarCmd( int lNbArgs, char **d_szArgs )
 {
 	if ( lNbArgs < 1 )
 	{
-		fn_vPrint("Usage: cvar [name] [value]");
+		fn_vPrint("Usage: cvar <name> [value]");
 		fn_vPrint("Available CVars:");
 
 		for ( int i = 0; i < g_lNbCVars; i++ )
@@ -545,13 +554,13 @@ void fn_vCVarCmd( int lNbArgs, char **d_szArgs )
 			switch ( pVar->eType )
 			{
 			case E_CVarBool:
-				fn_vPrintCFmt(0, "\002%s\003 = %s", pVar->szName, (pVar->bValue ? "TRUE" : "FALSE"));
+				fn_vPrintCFmt(0, "" M_HiLite("%s") " = %s", pVar->szName, (pVar->bValue ? "TRUE" : "FALSE"));
 				break;
 			case E_CVarInt:
-				fn_vPrintCFmt(0, "\002%s\003 = %d", pVar->szName, pVar->lValue);
+				fn_vPrintCFmt(0, "" M_HiLite("%s") " = %d", pVar->szName, pVar->lValue);
 				break;
 			case E_CVarReal:
-				fn_vPrintCFmt(0, "\002%s\003 = %f", pVar->szName, pVar->xValue);
+				fn_vPrintCFmt(0, "" M_HiLite("%s") " = %f", pVar->szName, pVar->xValue);
 				break;
 			}
 		}
@@ -571,13 +580,13 @@ void fn_vCVarCmd( int lNbArgs, char **d_szArgs )
 		switch ( pVar->eType )
 		{
 		case E_CVarBool:
-			fn_vPrintCFmt(0, "\002%s\003 = %s", pVar->szName, (pVar->bValue ? "TRUE" : "FALSE"));
+			fn_vPrintCFmt(0, "" M_HiLite("%s") " = %s", pVar->szName, (pVar->bValue ? "TRUE" : "FALSE"));
 			break;
 		case E_CVarInt:
-			fn_vPrintCFmt(0, "\002%s\003 = %d", pVar->szName, pVar->lValue);
+			fn_vPrintCFmt(0, "" M_HiLite("%s") " = %d", pVar->szName, pVar->lValue);
 			break;
 		case E_CVarReal:
-			fn_vPrintCFmt(0, "\002%s\003 = %f", pVar->szName, pVar->xValue);
+			fn_vPrintCFmt(0, "" M_HiLite("%s") " = %f", pVar->szName, pVar->xValue);
 			break;
 		}
 		return;
@@ -608,15 +617,52 @@ void fn_vCVarCmd( int lNbArgs, char **d_szArgs )
 	switch ( pVar->eType )
 	{
 	case E_CVarBool:
-		fn_vPrintCFmt(0, "  \002%s\003: \"%s\" --> \"%s\"", pVar->szName, (stOldVar.bValue ? "TRUE" : "FALSE"), (pVar->bValue ? "TRUE" : "FALSE"));
+		fn_vPrintCFmt(0, "  " M_HiLite("%s") ": \"%s\" --> \"%s\"", pVar->szName, (stOldVar.bValue ? "TRUE" : "FALSE"), (pVar->bValue ? "TRUE" : "FALSE"));
 		break;
 	case E_CVarInt:
-		fn_vPrintCFmt(0, "  \002%s\003: \"%d\" --> \"%d\"", pVar->szName, stOldVar.lValue, pVar->lValue);
+		fn_vPrintCFmt(0, "  " M_HiLite("%s") ": \"%d\" --> \"%d\"", pVar->szName, stOldVar.lValue, pVar->lValue);
 		break;
 	case E_CVarReal:
-		fn_vPrintCFmt(0, "  \002%s\003: \"%f\" --> \"%f\"", pVar->szName, stOldVar.lValue, pVar->xValue);
+		fn_vPrintCFmt(0, "  " M_HiLite("%s") ": \"%f\" --> \"%f\"", pVar->szName, stOldVar.lValue, pVar->xValue);
 		break;
 	}
+}
+
+void fn_vWireframeCmd( int lNbArgs, char **d_szArgs )
+{
+	if ( GAM_g_stEngineStructure->ulDisplayMode & GLI_C_Mat_lIsNotWired )
+	{
+		GAM_g_stEngineStructure->ulDisplayMode &= ~GLI_C_Mat_lIsNotWired;
+		fn_vPrint("Wireframe ON");
+	}
+	else
+	{
+		GAM_g_stEngineStructure->ulDisplayMode |= GLI_C_Mat_lIsNotWired;
+		fn_vPrint("Wireframe OFF");
+	}
+}
+
+void fn_vBrightnessCmd( int lNbArgs, char **d_szArgs )
+{
+	long lCurrent = (long)(*GLI_g_xBrightness * 100.0f);
+
+	if ( lNbArgs < 1 )
+	{
+		fn_vPrint("Usage: bright [value]");
+		fn_vPrintCFmt(0, "Current brightness: %d", lCurrent);
+		return;
+	}
+
+	long lVal;
+	if ( !fn_bParseInt(d_szArgs[0], &lVal) )
+	{
+		fn_vPrintCFmt(2, "Invalid value \"%s\"", d_szArgs[0]);
+		return;
+	}
+
+	*GLI_g_xBrightness = lVal * 0.01f;
+
+	fn_vPrintCFmt(0, "Brightness: %d --> %d", lCurrent, lVal);
 }
 
 void fn_vVersionCmd( int lNbArgs, char **d_szArgs )

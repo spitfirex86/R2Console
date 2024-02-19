@@ -17,22 +17,18 @@ void fn_vDetachHooks( void )
 	FHK_M_lDestroyHook(&AGO_vDisplayGAUGES, MOD_AGO_vDisplayGAUGES);
 }
 
-BOOL APIENTRY DllMain( HMODULE hModule, DWORD dwReason, LPVOID lpReserved )
+__declspec(dllexport)
+int ModMain( BOOL bInit )
 {
-	switch ( dwReason )
+	if ( bInit )
 	{
-		case DLL_PROCESS_ATTACH:
-			fn_vAttachHooks();
-			fn_vEarlyInitConsole();
-			break;
-
-		case DLL_PROCESS_DETACH:
-			fn_vDetachHooks();
-			break;
-
-		case DLL_THREAD_ATTACH:
-		case DLL_THREAD_DETACH:
-			break;
+		fn_vAttachHooks();
+		fn_vEarlyInitConsole();
 	}
-	return TRUE;
+	else
+	{
+		fn_vDetachHooks();
+	}
+
+	return 0;
 }

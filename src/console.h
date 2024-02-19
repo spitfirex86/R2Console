@@ -9,8 +9,14 @@
 
 #define C_NbLines 100
 #define C_LinesOnScreen 14
+#define C_LinesOnScreenTiny 2
 #define C_MaxLine 72
 #define C_MaxHiLite 4
+
+#define C_AnimFrames 30
+#define C_AnimFramesTiny 6
+#define C_Transparency 0xB0
+
 
 typedef struct tdstHiLite
 {
@@ -45,6 +51,7 @@ void fn_vPrintC( unsigned char ucColor, char const *szString );
 void fn_vPrint( char const *szString );
 
 void fn_vResetScroll( void );
+void fn_vPasteAtCaret( char *szStr, int lStrLen );
 
 
 /****************************************************************************
@@ -52,6 +59,13 @@ void fn_vResetScroll( void );
  ****************************************************************************/
 
 #define C_MaxCmdName 32
+
+#define C_cHiLiteBegin	'\002'
+#define C_cHiLiteEnd	'\003'
+#define C_szHiLiteBegin	"\002"
+#define C_szHiLiteEnd	"\003"
+
+#define M_HiLite(str) C_szHiLiteBegin ## str ## C_szHiLiteEnd
 
 
 typedef void tdfnCommand( int lNbArgs, char **d_szArgs );

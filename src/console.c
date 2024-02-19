@@ -6,25 +6,31 @@
 #include "r2ptr.h"
 #include "cvars.h"
 #include "ext/ghost.h"
+#include "ext/freeze.h"
+#include "pick.h"
 
 
-char const g_szVersion[] = "R2Console v1.2 (" __DATE__ " " __TIME__ ")";
+char const g_szVersion[] = "R2Console v1.3 (" __DATE__ " " __TIME__ ")";
 
 BOOL g_bIsInit = FALSE;
 BOOL g_bShow = FALSE;
+BOOL g_bTinyMode = FALSE;
 
 MTH2D_tdstVector const g_stHiddenPos = { 0.0f, -M_FontToPercentY((C_LinesOnScreen + 1) * C_Font_xCharHeight) };
+MTH2D_tdstVector const g_stHiddenPos_Tiny = { 0.0f, -M_FontToPercentY((C_LinesOnScreenTiny + 1) * C_Font_xCharHeight) };
 MTH2D_tdstVector const g_stVisiblePos = { 0.0f, 0.0f };
 
-MTH2D_tdstVector g_stCurrentPos = { .0f, .0f };
-MTH2D_tdstVector g_stSize = { 100.0f, M_FontToPercentY((C_LinesOnScreen + 1) * C_Font_xCharHeight) };
+MTH2D_tdstVector const g_stSize = { 100.0f, M_FontToPercentY((C_LinesOnScreen + 1) * C_Font_xCharHeight) };
+MTH2D_tdstVector const g_stSize_Tiny = { 100.0f, M_FontToPercentY((C_LinesOnScreenTiny + 1) * C_Font_xCharHeight) };
 
+MTH2D_tdstVector g_stCurrentPos = { 0.0f, 0.0f };
+MTH2D_tdstVector const *g_p_stHiddenPos = &g_stHiddenPos;
+MTH2D_tdstVector const *g_p_stSize = &g_stSize;
+int g_lLinesOnScreen = C_LinesOnScreen;
 
+int g_lAnimFrames = C_AnimFrames;
 int g_lFrameCounter = 0;
 int g_lCaretFrame = 0;
-
-#define C_AnimFrames 30
-#define C_Transparency 0xB0
 
 
 tdstLine g_a_stLines[C_NbLines] = { 0 };
@@ -66,10 +72,10 @@ tdstHiLite *g_pstMouseOverWord = NULL;
 
 void fn_vAnimOneStep( void )
 {
-	if ( g_lFrameCounter >= 0 && g_lFrameCounter <= C_AnimFrames )
+	if ( g_lFrameCounter >= 0 && g_lFrameCounter <= g_lAnimFrames )
 	{
-		MTH_tdxReal xPercent = (MTH_tdxReal)g_lFrameCounter / (MTH_tdxReal)C_AnimFrames;
-		GFX_fn_vLerp2DVector(&g_stCurrentPos, &g_stHiddenPos, &g_stVisiblePos, xPercent);
+		MTH_tdxReal xPercent = (MTH_tdxReal)g_lFrameCounter / (MTH_tdxReal)g_lAnimFrames;
+		GFX_fn_vLerp2DVector(&g_stCurrentPos, g_p_stHiddenPos, &g_stVisiblePos, xPercent);
 
 		g_lFrameCounter += g_bShow ? 1 : -1;
 	}
@@ -79,11 +85,9 @@ void fn_vDrawConsoleSprites( void )
 {
 	MTH2D_tdstVector stTL = g_stCurrentPos;
 	MTH2D_tdstVector stBR = { 0 };
-	GFX_fn_vAdd2DVector(&stBR, &g_stCurrentPos, &g_stSize);
+	GFX_fn_vAdd2DVector(&stBR, &g_stCurrentPos, g_p_stSize);
 
 	GFX_fn_vDisplayFrameWithZValue(&stTL, &stBR, C_Transparency, 1.1f, &GAM_g_stEngineStructure->stFixViewportAttr);
-
-	CUR_fn_vDrawCursor();
 }
 
 tdstHiLite * fn_p_stHiLiteFindWord( void )
@@ -122,7 +126,7 @@ void fn_vDrawConsole( void )
 	y = M_PercentToFontY(g_stCurrentPos.y);
 
 	/* console history */
-	for ( int i = C_LinesOnScreen + g_ulOnScreenOffset - 1; i >= (int)g_ulOnScreenOffset; --i )
+	for ( int i = g_lLinesOnScreen + g_ulOnScreenOffset - 1; i >= (int)g_ulOnScreenOffset; --i )
 	{
 		char *szText = g_a_stLines[i].szText;
 		char cColor = FNT_M_lColorToChar(g_a_stLines[i].ucColor);
@@ -137,7 +141,7 @@ void fn_vDrawConsole( void )
 
 				strncpy(pTmp, szText, pHiLite->cFrom);
 				pTmp += pHiLite->cFrom;
-				*pTmp++ = '\023';
+				*pTmp++ = FNT_M_lColorToChar(3);
 
 				int lInnerLength = pHiLite->cTo - pHiLite->cFrom;
 				strncpy(pTmp, szText + pHiLite->cFrom, lInnerLength);
@@ -171,11 +175,11 @@ void fn_vDrawConsole( void )
 		FNT_fn_vDisplayString(x + xCaretOffset, y, (g_bReplaceMode ? "\022_" : "_"));
 
 	/* scrollbar */
-	MTH_tdxReal xScrollBarHeight = M_PercentToFontY(g_stSize.y) - (C_Font_xCharHeight * 2);
-	long lScrollBarSteps = C_NbLines - C_LinesOnScreen;
+	MTH_tdxReal xScrollBarHeight = M_PercentToFontY(g_p_stSize->y) - (C_Font_xCharHeight * 2);
+	long lScrollBarSteps = C_NbLines - g_lLinesOnScreen;
 	MTH_tdxReal xScrollBarPos = (1 - (float)g_ulOnScreenOffset / (float)lScrollBarSteps) * xScrollBarHeight;
 	
-	x = M_PercentToFontX(g_stCurrentPos.x + g_stSize.x) - C_Font_xCharWidth;
+	x = M_PercentToFontX(g_stCurrentPos.x + g_p_stSize->x) - C_Font_xCharWidth;
 	y = M_PercentToFontY(g_stCurrentPos.y) + xScrollBarPos;
 
 	FNT_fn_vDisplayString(x, y, "\021[");
@@ -193,21 +197,42 @@ void fn_vShowConsole( void )
 	g_bShow = !g_bShow;
 	g_lFrameCounter += g_bShow ? 1 : -1;
 
-    if ( g_bShow )
-    {
-        s_ulSaveNbEntry = IPT_g_stInputStructure->ulNumberOfEntryElement;
+	if ( g_bShow )
+	{
+		s_ulSaveNbEntry = IPT_g_stInputStructure->ulNumberOfEntryElement;
 		IPT_g_stInputStructure->ulNumberOfEntryElement = 0;
 
 		if ( CON_bPauseGame->bValue )
 			GAM_g_stEngineStructure->bEngineIsInPaused = TRUE;
+
+		if ( g_bTinyMode )
+		{
+			g_p_stSize = &g_stSize_Tiny;
+			g_p_stHiddenPos = &g_stHiddenPos_Tiny;
+			g_lLinesOnScreen = C_LinesOnScreenTiny;
+			g_lAnimFrames = C_AnimFramesTiny;
+			if ( g_lFrameCounter > C_AnimFramesTiny )
+				g_lFrameCounter = C_AnimFramesTiny;
+		}
+		else
+		{
+			g_p_stSize = &g_stSize;
+			g_p_stHiddenPos = &g_stHiddenPos;
+			g_lLinesOnScreen = C_LinesOnScreen;
+			g_lAnimFrames = C_AnimFrames;
+		}
 	}
 	else
 	{
-	    IPT_g_stInputStructure->ulNumberOfEntryElement = s_ulSaveNbEntry;
+		IPT_g_stInputStructure->ulNumberOfEntryElement = s_ulSaveNbEntry;
 
 		if ( CON_bPauseGame->bValue )
 			GAM_g_stEngineStructure->bEngineIsInPaused = FALSE;
 	}
+
+#ifdef USE_PICK
+	fn_vResetPickedMenu();
+#endif
 }
 
 void fn_vPushHistory( char *szString )
@@ -222,8 +247,8 @@ void fn_vPushLineWithHiLite( char *szString, unsigned char ucColor, char cPrefix
 	// Shift lines by 1
 	memmove(&g_a_stLines[1], &g_a_stLines[0], (C_NbLines-1)*sizeof(tdstLine));
 
-    g_a_stLines[0].ucColor = ucColor;
-    g_a_stLines[0].cPrefix = cPrefix;
+	g_a_stLines[0].ucColor = ucColor;
+	g_a_stLines[0].cPrefix = cPrefix;
 	strcpy(g_a_stLines[0].szText, szString);
 
 	if ( a_stHiLite )
@@ -248,16 +273,16 @@ void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
 	tdstHiLite stHiLite[C_MaxHiLite] = { 0 };
 	tdstHiLite *pHiLite = stHiLite;
 
-    do
-    {
+	do
+	{
 		if ( pHiLite < &stHiLite[C_MaxHiLite] )
 		{
-			if ( *pChar == '\002' )
+			if ( *pChar == C_cHiLiteBegin )
 			{
 				pHiLite->cFrom = (char)nChars;
 				continue;
 			}
-			if ( *pChar == '\003' )
+			if ( *pChar == C_cHiLiteEnd )
 			{
 				pHiLite->cTo = (char)nChars;
 				pHiLite++;
@@ -268,17 +293,17 @@ void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix )
 		szBuffer[nChars] = (*pChar == '\n') ? ' ' : *pChar;
 		nChars++;
 
-        if ( *pChar == 0 || *pChar == '\n' || nChars == C_MaxLine - 1 )
-        {
+		if ( *pChar == 0 || *pChar == '\n' || nChars == C_MaxLine - 1 )
+		{
 			szBuffer[nChars] = '\0';
 			nChars = 0;
 
 			fn_vPushLineWithHiLite(szBuffer, ucColor, cPrefix, stHiLite);
 			ZeroMemory(stHiLite, sizeof(stHiLite));
 			pHiLite = stHiLite;
-        }
+		}
 
-    } while ( *pChar++ );
+	} while ( *pChar++ );
 }
 
 void fn_vPrintCFmt( unsigned char ucColor, char *szFmt, ... )
@@ -325,11 +350,11 @@ void fn_vParseCommand( char *szString )
 		szString++; length--;
 	}
 
-    if ( length <= 0 || length >= C_MaxCmdName )
-    {
-        fn_vPrintC(2, "Unknown command");
+	if ( length <= 0 || length >= C_MaxCmdName )
+	{
+		fn_vPrintC(2, "Unknown command");
 		return;
-    }
+	}
 
 	strncpy(szCommand, szString, length);
 	szCommand[length] = 0;
@@ -339,12 +364,12 @@ void fn_vParseCommand( char *szString )
 
 	for ( int i = 0; i < g_lNbCommands; i++ )
 	{
-        if ( _stricmp(szCommand, g_a_stCommands[i].szName) == 0 )
-        {
+		if ( _stricmp(szCommand, g_a_stCommands[i].szName) == 0 )
+		{
 			strcpy(szArgs, szString + length);
 			int lCount = fn_lSplitArgs(szArgs, &d_szArgs);
 
-            g_a_stCommands[i].p_stCommand(lCount, d_szArgs);
+			g_a_stCommands[i].p_stCommand(lCount, d_szArgs);
 			g_lLastCommandId = i;
 
 			if ( bPerfCmd )
@@ -354,8 +379,8 @@ void fn_vParseCommand( char *szString )
 			}
 
 			free(d_szArgs);
-            return;
-        }
+			return;
+		}
 	}
 
 	fn_vPrintC(2, "Unknown command");
@@ -392,21 +417,22 @@ void fn_vSetPromptFromHistory( int lIdx )
 
 void fn_vScrollConsole( long lLines )
 {
+	long lScreenOffset = (long)g_ulOnScreenOffset;
 	if ( lLines > 0 ) // scrolling up
 	{
 		// upper bound of the buffer
-		if ( g_ulOnScreenOffset + lLines > (C_NbLines - C_LinesOnScreen) )
-			lLines = (C_NbLines - C_LinesOnScreen) - g_ulOnScreenOffset;
+		if ( lScreenOffset + lLines > (C_NbLines - g_lLinesOnScreen) )
+			lLines = (C_NbLines - g_lLinesOnScreen) - lScreenOffset;
 
 		// if the line we're trying to scroll to is empty, find next non-empty line
-		while ( lLines > 0 && g_a_stLines[g_ulOnScreenOffset + lLines + (C_LinesOnScreen - 1)].szText[0] == 0 )
+		while ( lLines > 0 && g_a_stLines[lScreenOffset + lLines + (g_lLinesOnScreen - 1)].szText[0] == 0 )
 			lLines--;
 	}
 	else if ( lLines < 0 ) // scrolling down
 	{
 		// lower bound of the buffer
-		if ( (long)g_ulOnScreenOffset + lLines < 0 )
-			lLines = -(long)g_ulOnScreenOffset;
+		if ( (long)lScreenOffset + lLines < 0 )
+			lLines = -(long)lScreenOffset;
 	}
 
 	g_ulOnScreenOffset += lLines;
@@ -527,6 +553,7 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 {
 	if ( dwKeyCode == VK_OEM_3 )
 	{
+		g_bTinyMode = GetKeyState(VK_SHIFT) & 0x8000 ? TRUE : FALSE;
 		fn_vShowConsole();
 		return TRUE;
 	}
@@ -661,12 +688,26 @@ void MOD_AGO_vDisplayGAUGES( GLD_tdstViewportAttributes *p_stVpt )
 {
 	AGO_vDisplayGAUGES(p_stVpt);
 
-	g_pstMouseOverWord = fn_p_stHiLiteFindWord();
-	CUR_fn_vSetCursorCxt(g_pstMouseOverWord != NULL);
+	if ( g_bShow )
+	{
+		g_pstMouseOverWord = fn_p_stHiLiteFindWord();
+		BOOL bAltCursor = (
+			g_pstMouseOverWord != NULL
+#ifdef USE_PICK
+			|| g_lPickMenuSel > -1
+#endif
+			);
+		CUR_fn_vSetCursorCxt(bAltCursor);
+		CUR_fn_vDrawCursor();
+
+#ifdef USE_PICK
+		fn_vDrawPickedMenu();
+#endif
+	}
+
 	fn_vDrawConsole();
 }
 
-extern unsigned char *g_ucIsEdInGhostMode;
 extern unsigned char g_ucGhostModeCameraWorkaround;
 
 void MOD_fn_vEngine( void )
@@ -678,31 +719,53 @@ void MOD_fn_vEngine( void )
 		switch ( g_ucGhostModeCameraWorkaround-- )
 		{
 			case 2:
-				s_ucSaveGhostMode = *g_ucIsEdInGhostMode;
-				*g_ucIsEdInGhostMode = 1;
+				s_ucSaveGhostMode = *GAM_g_ucIsEdInGhostMode;
+				*GAM_g_ucIsEdInGhostMode = 1;
 				break;
 
 			case 1:
-				*g_ucIsEdInGhostMode = s_ucSaveGhostMode;
+				*GAM_g_ucIsEdInGhostMode = s_ucSaveGhostMode;
 				break;
 		}
 	}
 
+	/* noclip */
 	GST_fn_vDoGhostMode();
 
 	GAM_fn_vEngine();
+
+	/* freeze / one-step */
+	FRZ_fn_vDoEngineFreeze();
+}
+
+void fn_vPasteAtCaret( char *szStr, int lStrLen )
+{
+	int lFreeSpace = C_MaxPromptChars - strlen(g_szPrompt);
+	if ( lStrLen > lFreeSpace )
+		lStrLen = lFreeSpace;
+
+	/* move rest of the prompt */
+	char *pAtCaret = &g_szPrompt[g_ulCaretPos];
+	int lRemaining = strlen(pAtCaret) + 1;
+	memmove(pAtCaret+lStrLen, pAtCaret, lRemaining);
+
+	/* insert the string at caret */
+	strncpy(pAtCaret, szStr, lStrLen);
+	g_ulNbChars = strlen(g_szPrompt);
+	g_ulCaretPos += lStrLen;
 }
 
 void fn_vHiLiteHitTest( MTH2D_tdstVector *p_stPos )
 {
-	if ( p_stPos->x > g_stCurrentPos.x && p_stPos->x < (g_stCurrentPos.x + g_stSize.x)
-		&& p_stPos->y > g_stCurrentPos.y && p_stPos->y < (g_stCurrentPos.y + g_stSize.y) )
-	{
-		MTH_tdxReal xPosY = p_stPos->y - g_stCurrentPos.y;
-		int lLineFromTop = (int)(xPosY / M_FontToPercentY(C_Font_xCharHeight)) + 1;
-		g_lMouseOverLine = C_LinesOnScreen + g_ulOnScreenOffset - lLineFromTop;
+	MTH_tdxReal xPosX = p_stPos->x - g_stCurrentPos.x;
+	MTH_tdxReal xPosY = p_stPos->y - g_stCurrentPos.y;
 
-		MTH_tdxReal xPosX = p_stPos->x - g_stCurrentPos.x;
+	if ( xPosX > 0 && xPosX < g_p_stSize->x
+		&& xPosY > 0 && p_stPos->y < g_p_stSize->y )
+	{
+		int lLineFromTop = (int)(xPosY / M_FontToPercentY(C_Font_xCharHeight)) + 1;
+
+		g_lMouseOverLine = g_lLinesOnScreen + g_ulOnScreenOffset - lLineFromTop;
 		g_lMouseOverChar = (int)(xPosX / M_FontToPercentX(C_Font_xActualCharWidth));
 	}
 	else
@@ -722,19 +785,8 @@ void fn_vHiLiteSelect( MTH2D_tdstVector *p_stPos )
 	if ( !pHiLite )
 		return;
 
-	int lFreeSpace = C_MaxPromptChars - strlen(g_szPrompt);
 	int lLength = pHiLite->cTo - pHiLite->cFrom;
-	if ( lLength > lFreeSpace )
-		lLength = lFreeSpace;
-
-	/* move rest of the prompt */
-	char *pAtCaret = &g_szPrompt[g_ulCaretPos];
-	int lRemaining = strlen(pAtCaret) + 1;
-	memmove(pAtCaret+lLength, pAtCaret, lRemaining);
-
-	strncpy(pAtCaret, pLine->szText + pHiLite->cFrom, lLength);
-	g_ulNbChars = strlen(g_szPrompt);
-	g_ulCaretPos += lLength;
+	fn_vPasteAtCaret(pLine->szText + pHiLite->cFrom, lLength);
 }
 
 
@@ -752,39 +804,57 @@ LRESULT CALLBACK MOD_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		if ( fn_bProcessChar(wParam) )
 			return 0;
 	}
-	else if ( uMsg == WM_LBUTTONDOWN )
+
+	if ( !g_bShow )
+		return GAM_fn_WndProc(hWnd, uMsg, wParam, lParam);
+
+	if ( uMsg == WM_LBUTTONDOWN )
 	{
 		fn_vMouseCoordToPercent(&stPos, lParam, hWnd);
 		fn_vHiLiteSelect(&stPos);
+#ifdef USE_PICK
+		fn_vPickMenuSelect(&stPos);
+#endif
+		return 0;
+	}
+	else if ( uMsg == WM_RBUTTONDOWN )
+	{
+		fn_vMouseCoordToPercent(&stPos, lParam, hWnd);
+#ifdef USE_PICK
+		fn_vPickObjectFromWorld(LOWORD(lParam), HIWORD(lParam), &stPos);
+#endif
+#ifdef USE_WATCH
+		WAT_fn_vHitTestClose(&stPos);
+#endif
+		return 0;
 	}
 	else if ( uMsg == WM_MOUSEMOVE )
 	{
 		fn_vMouseCoordToPercent(&stPos, lParam, hWnd);
 		CUR_fn_vMoveCursor(&stPos);
 		fn_vHiLiteHitTest(&stPos);
-
-#if defined(USE_WATCH)
+#ifdef USE_PICK
+		fn_vPickMenuHitTest(&stPos);
+#endif
+#ifdef USE_WATCH
 		WAT_fn_vHitTestMove(&stPos, (wParam & MK_LBUTTON));
 #endif
-
 		return 0;
 	}
 	else if ( uMsg == WM_MOUSEWHEEL )
 	{
 		short wLines = GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
 
+		stPos.x -= g_stCurrentPos.x;
+		stPos.y -= g_stCurrentPos.y;
+
 		// hit test
-		if ( stPos.x > g_stCurrentPos.x && stPos.x < (g_stCurrentPos.x + g_stSize.x)
-			&& stPos.y > g_stCurrentPos.y && stPos.y < (g_stCurrentPos.y + g_stSize.y) )
+		if ( stPos.x > 0 && stPos.x < g_p_stSize->x
+			&& stPos.y > 0 && stPos.y < g_p_stSize->y )
 		{
 			fn_vScrollConsole(wLines);
 		}
-	}
-	else if ( uMsg == WM_RBUTTONDOWN )
-	{
-#if defined(USE_WATCH)
-		WAT_fn_vHitTestClose(&stPos);
-#endif
+		return 0;
 	}
 
 	return GAM_fn_WndProc(hWnd, uMsg, wParam, lParam);

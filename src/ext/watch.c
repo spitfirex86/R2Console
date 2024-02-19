@@ -2,6 +2,9 @@
 #include "watch.h"
 
 
+#if defined(USE_WATCH)
+
+
 typedef struct tdstWatch
 {
 	void *Data;
@@ -232,3 +235,6 @@ void WAT_fn_vHitTestMove( MTH2D_tdstVector *p_stPos, BOOL bLeftButton )
 		stOffset.x = stOffset.y = 0;
 	}
 }
+
+
+#endif
