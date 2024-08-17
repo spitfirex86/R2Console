@@ -23,3 +23,16 @@ void GFX_fn_vDisplayFrameWithZValue(
 	MTH_tdxReal xZValue,
 	GLD_tdstViewportAttributes *p_stViewport
 );
+
+void GFX_vDraw2DGradientWithPercent(
+	GLD_tdstViewportAttributes *p_stVpt,
+	MTH_tdxReal XMin,
+	MTH_tdxReal YMin,
+	MTH_tdxReal XMax,
+	MTH_tdxReal YMax,
+	unsigned int *a4_ulColors
+);
+
+#define M_ulPackRGBA( R, G, B, A ) (unsigned long)(((A)&0xFF)<<24 | ((R)&0xFF)<<16 | ((G)&0xFF)<<8 | ((B)&0xFF))
+#define M_ulPackRGB( R, G, B ) M_ulPackRGBA(R, G, B, 0xFF)
+#define M_ulPackRGBAndAlpha( RGB, A ) (unsigned long)(((A)&0xFF)<<24 | ((RGB)&0xFFFFFF))

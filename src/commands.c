@@ -340,7 +340,7 @@ void fn_vActorCmd( int lNbArgs, char **d_szArgs )
 	fn_vPrintCFmt(0, "  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
 
 	HIE_tdstEngineObject *pPerso = pActor->hLinkedObject.p_stCharacter;
-	HIE_tdstStandardGame *pStdGame = pPerso->hStandardGame;
+	GAM_tdstStandardGame *pStdGame = pPerso->hStandardGame;
 	fn_vPrintCFmt(0, "  HitPoints: %d / %d", pStdGame->ucHitPoints, pStdGame->ucHitPointsMax);
 }
 

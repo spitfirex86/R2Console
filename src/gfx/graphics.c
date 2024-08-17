@@ -1,5 +1,6 @@
 #include "../framework.h"
 #include "graphics.h"
+#include "../utils.h"
 
 
 #define M_xLerp(a,b,t) ((a)+((t)*((b)-(a))))
@@ -40,6 +41,78 @@ void GFX_fn_vDisplayFrameWithZValue(
 	GLI_vDisplayFrame(p_stTopLeft, p_stBottomRight, xAlpha, p_stViewport);
 
 	*GLI_g_fZValueForSprite = xSaveZValue;
+}
+
+GLI_tdstMaterial **GLI_gs_hDefaultMaterial = OFFSET(0x5036B0);
+
+void (**GLI_DRV_vSendSpriteToClipWithColors_)( GLI_tdstAligned2DVector *a4_st2DVertex, void *_Colors, float xZ, GLI_tdstInternalGlobalValuesFor3dEngine *p_stGlobaleMT ) = OFFSET(0x504838);
+
+
+/* The triangles are drawn as such:
+	1---0
+	|A /|	A -> 0 1 2
+	| / |	B -> 3 2 0
+	|/ B|
+	2---3
+*/
+void GFX_vDraw2DGradientWithPercent( GLD_tdstViewportAttributes *p_stVpt, MTH_tdxReal XMin, MTH_tdxReal YMin, MTH_tdxReal XMax, MTH_tdxReal YMax, unsigned int *a4_ulColors )
+{
+	MTH_tdxReal x1, x2, y1, y2;
+	GLI_tdstAligned2DVector a4_st2DVertex[4];
+	
+	GLI_tdstInternalGlobalValuesFor3dEngine *p_stGlobals = *GLI_BIG_GLOBALS;
+	GLI_tdstMaterial *hMaterial = *GLI_gs_hDefaultMaterial;
+
+	MTH_tdxReal xVptWidth = (MTH_tdxReal)p_stVpt->dwWidth;
+	MTH_tdxReal xVptHeight = (MTH_tdxReal)p_stVpt->dwHeight;
+
+	x1 = (XMin / 100.0f) * xVptWidth;
+	x2 = (XMax / 100.0f) * xVptWidth;
+	y1 = (YMin / 100.0f) * xVptHeight;
+	y2 = (YMax / 100.0f) * xVptHeight;
+
+	if ( GLI_FIX_bIsWidescreen() )
+	{
+		float ratio = 1.0f;
+		float addToCenter = 0.0f;
+
+		if ( XMin != 0.0f || XMax != 100.0f )
+		{
+			ratio = g_xScreenRatio / 0.75f;
+			addToCenter = (xVptWidth - (xVptWidth * ratio)) / 2;
+		}
+
+		x1 = x1 * ratio + addToCenter;
+		x2 = x2 * ratio + addToCenter;
+	}
+
+	a4_st2DVertex[0].xX = x2;
+	a4_st2DVertex[0].xY = y1;
+	a4_st2DVertex[0].xOoZ = 1.0f;
+	a4_st2DVertex[1].xX = x1;
+	a4_st2DVertex[1].xY = y1;
+	a4_st2DVertex[1].xOoZ = 1.0f;
+	a4_st2DVertex[2].xX = x1;
+	a4_st2DVertex[2].xY = y2;
+	a4_st2DVertex[2].xOoZ = 1.0f;
+	a4_st2DVertex[3].xX = x2;
+	a4_st2DVertex[3].xY = y2;
+	a4_st2DVertex[3].xOoZ = 1.0f;
+
+	MTH_tdxReal xSaveAlpha = GLI_fn_xGetGlobalAlpha();
+	GLI_vSetGlobalAlpha(0.f);
+
+	hMaterial->stAmbient.xR = hMaterial->stAmbient.xG = hMaterial->stAmbient.xB = 0;
+	p_stGlobals->hCurrentMaterial = hMaterial;
+	p_stGlobals->lCurrentDrawMask = p_stGlobals->lHierachDrawMask =
+		p_stGlobals->hCurrentMaterial->ulMaterialType = 0xFFFFFFFF - GLI_C_Mat_lIsTestingBackface - GLI_C_Mat_lIsNotGrided;
+
+	GLI_vDoMaterialSelection(p_stGlobals);
+	p_stGlobals->xTextureDontAcceptFog = 1;
+
+	(*GLI_DRV_vSendSpriteToClipWithColors_)(a4_st2DVertex, a4_ulColors, *GLI_g_fZValueForSprite, p_stGlobals);
+
+	GLI_vSetGlobalAlpha(xSaveAlpha);
 }
 
 

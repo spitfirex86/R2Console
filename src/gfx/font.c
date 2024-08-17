@@ -1,12 +1,14 @@
 ﻿#include "../framework.h"
 #include "font.h"
 #include "graphics.h"
+#include "../utils.h"
 
 
 GLI_tdstTexture *g_pstFontTex = NULL;
 GLI_tdstMaterial g_stFontMat = { 0 };
 
 MTH2D_tdstVector g_stPixelSize = { 0, 0 };
+MTH2D_tdstVector g_stDisplayOffset = { 0, 0 };
 
 
 unsigned char g_a_a3_Colors[][3] = {
@@ -30,10 +32,10 @@ void FNT_fn_vDisplayString( MTH_tdxReal xX, MTH_tdxReal xY, char *szString )
 	MTH_tdxReal u, v;
 	int lOffset = 0;
 
-	x = xX = xX * g_stPixelSize.x;
+	x = xX = xX * g_stPixelSize.x + g_stDisplayOffset.x;
 	dx = C_Font_xCharWidth * g_stPixelSize.x;
 	dx2 = C_Font_xActualCharWidth * g_stPixelSize.x;
-	y = xY = xY * g_stPixelSize.y;
+	y = xY = xY * g_stPixelSize.y + g_stDisplayOffset.y;
 	dy = C_Font_xCharHeight * g_stPixelSize.y;
 
 	/* set default color */
@@ -104,10 +106,20 @@ void FNT_fn_vDisplayStringFmt( MTH_tdxReal xX, MTH_tdxReal xY, char const *szFmt
 
 void FNT_fn_vFontInit( void )
 {
-	/* pixel size */
 	GLD_tdstViewportAttributes *p_stVpt = &GAM_g_stEngineStructure->stFixViewportAttr;
+
+	/* pixel size */
+	
 	g_stPixelSize.x = 1.0f / 640.0f * (float)p_stVpt->dwWidth;
 	g_stPixelSize.y = 1.0f / 480.0f * (float)p_stVpt->dwHeight;
+
+	if ( GLI_FIX_bIsWidescreen() )
+	{
+		float xRatio = GLI_FIX_xGetActualRatio() / 0.75f;
+
+		g_stPixelSize.x *= xRatio;
+		g_stDisplayOffset.x = p_stVpt->dwWidth * (1 - xRatio) / 2;
+	}
 }
 
 void FNT_fn_vLoadFontTexture( void )

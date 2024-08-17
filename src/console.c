@@ -63,6 +63,7 @@ BOOL g_bForceThisCommand = FALSE;
 tdstCVar *CON_bPauseGame = NULL;
 tdstCVar *CON_bEnterHides = NULL;
 tdstCVar *CON_bPerfCmd = NULL;
+tdstCVar *CON_bClassicStyle = NULL;
 
 /* highlighted word */
 long g_lMouseOverLine = -1;
@@ -81,13 +82,74 @@ void fn_vAnimOneStep( void )
 	}
 }
 
+#define C_FrameBottomMargin 1.2f
+#define C_FrameSideMargin 6.0f
+
 void fn_vDrawConsoleSprites( void )
 {
 	MTH2D_tdstVector stTL = g_stCurrentPos;
 	MTH2D_tdstVector stBR = { 0 };
 	GFX_fn_vAdd2DVector(&stBR, &g_stCurrentPos, g_p_stSize);
 
-	GFX_fn_vDisplayFrameWithZValue(&stTL, &stBR, C_Transparency, 1.1f, &GAM_g_stEngineStructure->stFixViewportAttr);
+	stBR.x -= 0.001f; /* fullwidth fix for widescreen patch */
+
+	if ( CON_bClassicStyle->bValue ) /* use old frame */
+	{
+		GFX_fn_vDisplayFrameWithZValue(&stTL, &stBR, C_ClassicTransparency, 1.1f, &GAM_g_stEngineStructure->stFixViewportAttr);
+		return;
+	}
+
+	/* The console frame:
+		________________
+		|3 |1       |5 |
+		|__|________|__|
+		|4_|2_______|6_|
+
+		in 4:3 aspect, only frames 1 and 2 are rendered
+		in widescreen, all frames are rendered
+	*/
+
+	MTH_tdxReal xSaveZValue = *GLI_g_fZValueForSprite;
+	*GLI_g_fZValueForSprite = 1.1f;
+	*GLI_g_bForceAAAColor = 0;
+
+	unsigned int a4_ulColors[4];
+
+	/* frame 1 */
+	a4_ulColors[0] = a4_ulColors[1] = a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+	GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x, stTL.y, stBR.x, stBR.y, a4_ulColors);
+
+	/* frame 2 */
+	a4_ulColors[0] = a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+	a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
+	GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x, stBR.y, stBR.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
+
+	if ( GLI_FIX_bIsWidescreen() )
+	{
+		/* frame 3 */
+		a4_ulColors[0] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+		a4_ulColors[1] = a4_ulColors[2] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
+		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x - C_FrameSideMargin, stTL.y, stTL.x, stBR.y, a4_ulColors);
+
+		/* frame 4 */
+		a4_ulColors[0] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+		a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
+		a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
+		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x - C_FrameSideMargin, stBR.y, stTL.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
+
+		/* frame 5 */
+		a4_ulColors[0] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
+		a4_ulColors[1] = a4_ulColors[2] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stBR.x, stTL.y, stBR.x + C_FrameSideMargin, stBR.y, a4_ulColors);
+
+		/* frame 6 */
+		a4_ulColors[0] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
+		a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
+		a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
+		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stBR.x, stBR.y, stBR.x + C_FrameSideMargin, stBR.y + C_FrameBottomMargin, a4_ulColors);
+	}
+
+	*GLI_g_fZValueForSprite = xSaveZValue;
 }
 
 tdstHiLite * fn_p_stHiLiteFindWord( void )
@@ -660,6 +722,9 @@ void fn_vInitVars( void )
 
 	CON_bPerfCmd = fn_p_stCreateCVar("Con_PerfCmd", E_CVarBool);
 	CON_bPerfCmd->bValue = FALSE;
+
+	CON_bClassicStyle = fn_p_stCreateCVar("Con_Classic", E_CVarBool);
+	CON_bClassicStyle->bValue = FALSE;
 }
 
 void fn_vEarlyInitConsole( void )
@@ -674,6 +739,7 @@ void fn_vEarlyInitConsole( void )
 
 void fn_vInitConsole( void )
 {
+	fn_bInitWidescreenSupport();
 	FNT_fn_vFontInit();
 
 	fn_vInitVars();

@@ -213,12 +213,61 @@ BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut )
 	return TRUE;
 }
 
-
 void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd )
 {
 	RECT rc;
 	GetClientRect(hWnd, &rc);
 
-	p_stOut->x = (float)LOWORD(lParam) / (float)(rc.right - rc.left) * 100.0f;
-	p_stOut->y = (float)HIWORD(lParam) / (float)(rc.bottom - rc.top) * 100.0f;
+	MTH2D_tdstVector p_stCoord = {
+		(float)LOWORD(lParam) / (float)(rc.right - rc.left) * 100.0f,
+		(float)HIWORD(lParam) / (float)(rc.bottom - rc.top) * 100.0f
+	};
+
+	if ( GLI_FIX_bIsWidescreen() )
+		fn_vAdjustPercentForWidescreen(&p_stCoord);
+
+	*p_stOut = p_stCoord;
+}
+
+
+/* widescreen stuff */
+
+BOOL fn_bIsWidescreen_Null( void ) { return FALSE; }
+float fn_xGetActualRatio_Null( void ) { return 0.75f; }
+
+BOOL (*GLI_FIX_bIsWidescreen)( void ) = fn_bIsWidescreen_Null;
+float (*GLI_FIX_xGetActualRatio)( void ) = fn_xGetActualRatio_Null;
+
+BOOL g_bIsWidescreenInit = FALSE;
+float g_xScreenRatio = 0.75f;
+
+BOOL fn_bInitWidescreenSupport( void )
+{
+	if ( g_bIsWidescreenInit )
+		return TRUE;
+
+	HMODULE hFixModule = GetModuleHandle("GliFixVf");
+	if ( !hFixModule )
+		return FALSE;
+
+	GLI_FIX_bIsWidescreen = (BOOL (*)(void))GetProcAddress(hFixModule, "GLI_FIX_bIsWidescreen");
+	GLI_FIX_xGetActualRatio = (float (*)(void))GetProcAddress(hFixModule, "GLI_FIX_xGetActualRatio");
+
+	if ( !GLI_FIX_bIsWidescreen || !GLI_FIX_xGetActualRatio )
+	{
+		GLI_FIX_bIsWidescreen = fn_bIsWidescreen_Null;
+		GLI_FIX_xGetActualRatio = fn_xGetActualRatio_Null;
+		return FALSE;
+	}
+
+	g_bIsWidescreenInit = TRUE;
+	g_xScreenRatio = GLI_FIX_xGetActualRatio();
+	return TRUE;
+}
+
+void fn_vAdjustPercentForWidescreen( MTH2D_tdstVector *p_stVec )
+{
+	float xRatio = g_xScreenRatio / 0.75f;
+	p_stVec->x -= (1 - xRatio) / 2 * 100.f;
+	p_stVec->x /= xRatio;
 }

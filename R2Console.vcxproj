@@ -101,6 +101,7 @@
     <ClInclude Include="src\r2ptr.h" />
     <ClInclude Include="src\gfx\graphics.h" />
     <ClInclude Include="src\ext\watch.h" />
+    <ClInclude Include="src\utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\commands.c" />
