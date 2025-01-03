@@ -4,6 +4,8 @@
 
 #include "utils.h"
 
+#define LIBRARY_API __declspec(dllimport)
+
 
 /****************************************************************************
  * Main
@@ -52,13 +54,13 @@ extern tdstLine g_a_stLines[C_NbLines];
 void fn_vEarlyInitConsole( void );
 void fn_vInitConsole( void );
 
-void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix );
-void fn_vPrintCFmt( unsigned char ucColor, char *szFmt, ... );
-void fn_vPrintC( unsigned char ucColor, char const *szString );
-void fn_vPrint( char const *szString );
+LIBRARY_API void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix );
+LIBRARY_API void fn_vPrintCFmt( unsigned char ucColor, char *szFmt, ... );
+LIBRARY_API void fn_vPrintC( unsigned char ucColor, char const *szString );
+LIBRARY_API void fn_vPrint( char const *szString );
 
-void fn_vResetScroll( void );
-void fn_vPasteAtCaret( char *szStr, int lStrLen );
+LIBRARY_API void fn_vResetScroll( void );
+LIBRARY_API void fn_vPasteAtCaret( char *szStr, int lStrLen );
 
 
 /****************************************************************************
