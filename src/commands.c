@@ -24,34 +24,86 @@ tdfnCommand fn_vMainActorCmd;
 tdfnCommand fn_vWireframeCmd;
 tdfnCommand fn_vBrightnessCmd;
 
+tdstCommand* g_a_stCommands;
+int g_lNbCommands = 0;
+int g_lArraySize = 0;
 
-tdstCommand g_a_stCommands[] = {
-	{ "map", fn_vMapCmd },
-	{ "pos", fn_vGetSetPosCmd },
-	{ "tp", fn_vTeleportCmd },
-	{ "tpto", fn_vTeleportToCmd },
-	{ "noclip", fn_vGhostCmd },
-	{ "listobj", fn_vListObjCmd },
-	{ "find", fn_vFindCmd },
-	{ "actor", fn_vActorCmd },
-	{ "mainactor", fn_vMainActorCmd },
-	{ "reinit", fn_vReinitCmd },
-	{ "hexview" , fn_vHexViewCmd },
-#if defined(USE_WATCH)
-	{ "watch", WAT_fn_vWatchCmd },
-#endif
-	{ "freeze", FRZ_fn_vFreezeCmd },
-	{ "cvar", fn_vCVarCmd },
-	{ "wireframe", fn_vWireframeCmd },
-	{ "bright", fn_vBrightnessCmd },
-	{ "clear", fn_vClearCmd },
-	{ "help", fn_vHelpCmd },
-	{ "version", fn_vVersionCmd },
-	{ "quit", fn_vQuitCmd },
-};
+void fn_vInitCommands() {
+	fn_vRegisterCommand("map", fn_vMapCmd);
+	fn_vRegisterCommand("pos", fn_vGetSetPosCmd);
+	fn_vRegisterCommand("tp", fn_vTeleportCmd);
+	fn_vRegisterCommand("tpto", fn_vTeleportToCmd);
+	fn_vRegisterCommand("noclip", fn_vGhostCmd);
+	fn_vRegisterCommand("listobj", fn_vListObjCmd);
+	fn_vRegisterCommand("find", fn_vFindCmd);
+	fn_vRegisterCommand("actor", fn_vActorCmd);
+	fn_vRegisterCommand("mainactor", fn_vMainActorCmd);
+	fn_vRegisterCommand("reinit", fn_vReinitCmd);
+	fn_vRegisterCommand("hexview", fn_vHexViewCmd);
+	#if defined(USE_WATCH)
+		fn_vRegisterCommand("watch", WAT_fn_vWatchCmd);
+	#endif
+	fn_vRegisterCommand("freeze", FRZ_fn_vFreezeCmd);
+	fn_vRegisterCommand("cvar", fn_vCVarCmd);
+	fn_vRegisterCommand("wireframe", fn_vWireframeCmd);
+	fn_vRegisterCommand("bright", fn_vBrightnessCmd);
+	fn_vRegisterCommand("clear", fn_vClearCmd);
+	fn_vRegisterCommand("help", fn_vHelpCmd);
+	fn_vRegisterCommand("version", fn_vVersionCmd);
+	fn_vRegisterCommand("quit", fn_vQuitCmd);
+}
 
-int const g_lNbCommands = ARRAYSIZE(g_a_stCommands);
+void fn_vRegisterCommand(char* szName, tdfnCommand* p_stCommand)
+{
+	if ( strlen(szName) > C_MaxCmdName )
+	{
+		fn_vPrintCFmt(2, "Invalid command registration for %s exceeds length limit of %d", szName, C_MaxCmdName);
+		return;
+	}
 
+	// Passing the name directly into the struct doesn't work properly, so we do this instead
+	tdstCommand command = { "", p_stCommand };
+	snprintf(command.szName, C_MaxCmdName, szName);
+	fn_vRegisterCommandW(command);
+}
+
+void fn_vRegisterCommandW( tdstCommand command )
+{
+	g_lNbCommands++;
+	if ( g_lArraySize == 0 )
+	{
+		// The first time we initialize the array to 16 entries so we don't
+		// have to resize it all the time.
+		g_lArraySize = 16;
+		g_a_stCommands = malloc(16 * sizeof(tdstCommand));
+		if ( g_a_stCommands )
+		{
+			g_a_stCommands[0] = command;
+		}
+		else
+		{
+			fn_vPrintCFmt(2, "Encountered error allocating command array while registering %s", command.szName);
+		}
+	}
+	else
+	{
+		if  (g_lArraySize >= g_lNbCommands)
+		{
+			g_a_stCommands[g_lNbCommands - 1] = command;
+		}
+		else
+		{
+			g_lArraySize *= 2;
+			tdstCommand* reallocated = realloc(g_a_stCommands, g_lArraySize * sizeof(tdstCommand));
+			if (reallocated) {
+				reallocated[g_lNbCommands - 1] = command;
+				g_a_stCommands = reallocated;
+			} else {
+				fn_vPrintCFmt(2, "Encountered error re-allocating command array while registering %s", command.szName);
+			}
+		}
+	}
+}
 
 void fn_vHelpCmd( int lNbArgs, char **d_szArgs )
 {

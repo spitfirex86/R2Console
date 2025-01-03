@@ -4,8 +4,6 @@
 
 #include "utils.h"
 
-#define LIBRARY_API __declspec(dllimport)
-
 
 /****************************************************************************
  * Main
@@ -90,8 +88,11 @@ typedef struct tdstCommand
 tdstCommand;
 
 
-extern tdstCommand g_a_stCommands[];
-extern int const g_lNbCommands;
+LIBRARY_API extern tdstCommand* g_a_stCommands;
+LIBRARY_API extern int g_lNbCommands;
+extern void fn_vInitCommands();
+LIBRARY_API extern void fn_vRegisterCommand( char* szName, tdfnCommand* p_stCommand );
+LIBRARY_API extern void fn_vRegisterCommandW( tdstCommand command );
 
 extern void *g_pvLastCommandData;
 

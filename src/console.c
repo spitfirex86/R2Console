@@ -746,6 +746,7 @@ void fn_vInitConsole( void )
 
 	fn_vPrint(g_szVersion);
 	fn_vPrint("Type \"help\" for available commands");
+	fn_vInitCommands();
 
 	g_bIsInit = TRUE;
 }
