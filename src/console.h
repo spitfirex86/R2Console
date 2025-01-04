@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "framework.h"
-
 #include "utils.h"
 
 
@@ -52,10 +51,10 @@ extern tdstLine g_a_stLines[C_NbLines];
 void fn_vEarlyInitConsole( void );
 void fn_vInitConsole( void );
 
-void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix );
-void fn_vPrintCFmt( unsigned char ucColor, char *szFmt, ... );
-void fn_vPrintC( unsigned char ucColor, char const *szString );
-void fn_vPrint( char const *szString );
+R2CON_API void fn_vPrintEx( char const *szString, unsigned char ucColor, char cPrefix );
+R2CON_API void fn_vPrintCFmt( unsigned char ucColor, char *szFmt, ... );
+R2CON_API void fn_vPrintC( unsigned char ucColor, char const *szString );
+R2CON_API void fn_vPrint( char const *szString );
 
 void fn_vResetScroll( void );
 void fn_vPasteAtCaret( char *szStr, int lStrLen );
@@ -88,8 +87,10 @@ typedef struct tdstCommand
 tdstCommand;
 
 
-extern tdstCommand g_a_stCommands[];
-extern int const g_lNbCommands;
+extern tdstCommand* g_a_stCommands;
+extern int g_lNbCommands;
+extern void fn_vInitCommands( void );
+R2CON_API extern void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand );
 
 extern void *g_pvLastCommandData;
 

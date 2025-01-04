@@ -8,17 +8,18 @@
 ****************************************************************************/
 
 int fn_lSplitArgs( char *szString, char ***p_d_szArgsOut );
-void fn_vToLower( char *szDst, char *szSrc );
 int fn_vCharCountReverse( char *Str, char Ch, int lMaxChars );
 int fn_vNotCharCountReverse( char *Str, char Ch, int lMaxChars );
 
-BOOL fn_bParseBool( char *szArg, BOOL *p_bOut );
-BOOL fn_bParseInt( char *szArg, int *p_lOut );
-BOOL fn_bParseReal( char *szArg, MTH_tdxReal *p_xOut );
-int fn_lParseCoordinates( int lSize, char **d_szArgs, MTH_tdxReal *d_xOut );
+R2CON_API void fn_vToLower( char *szDst, char *szSrc );
 
-BOOL fn_bParsePtr( char *szArg, void **p_pOut );
-BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
+R2CON_API BOOL fn_bParseBool( char *szArg, BOOL *p_bOut );
+R2CON_API BOOL fn_bParseInt( char *szArg, int *p_lOut );
+R2CON_API BOOL fn_bParseReal( char *szArg, MTH_tdxReal *p_xOut );
+R2CON_API int fn_lParseCoordinates( int lSize, char **d_szArgs, MTH_tdxReal *d_xOut );
+
+R2CON_API BOOL fn_bParsePtr( char *szArg, void **p_pOut );
+R2CON_API BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
 
 void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd );
 
