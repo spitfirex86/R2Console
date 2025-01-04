@@ -11,9 +11,9 @@ int g_lSaveCurrentFrame = 0;
 
 void FRZ_fn_vDoEngineFreeze( void )
 {
-	if ( g_bFreezeEngine )
+	if ( g_bFreezeEngine ) /* engine is already frozen... */
 	{
-		if ( g_lFreezeRequest != 0 )
+		if ( g_lFreezeRequest != 0 ) /* ...and unfreeze was requested */
 		{
 			g_bFreezeEngine = FALSE;
 			GAM_g_stEngineStructure->bEngineIsInPaused = FALSE;
@@ -23,9 +23,9 @@ void FRZ_fn_vDoEngineFreeze( void )
 			//fn_vActualizeEngineClock();
 		}
 	}
-	else
+	else /* engine is running... */
 	{
-		if ( g_lFreezeRequest == 0 )
+		if ( g_lFreezeRequest == 0 ) /* ...and freeze was requested */
 		{
 			g_bFreezeEngine = TRUE;
 			GAM_g_stEngineStructure->bEngineIsInPaused = TRUE;
@@ -34,6 +34,7 @@ void FRZ_fn_vDoEngineFreeze( void )
 		}
 	}
 
+	/* decrease frame counter if unfreeze is temporary */
 	( g_lFreezeRequest > 0 ) ? --g_lFreezeRequest : g_lFreezeRequest;
 }
 
@@ -63,7 +64,15 @@ void FRZ_fn_vFreezeCmd( int lNbArgs, char **d_szArgs )
 	}
 	else
 	{
-		g_lFreezeRequest = 0;
-		fn_vPrint("Engine frozen");
+		if ( lNbFrames > 0 )
+		{
+			g_lFreezeRequest = lNbFrames;
+			fn_vPrintCFmt(0, "Freezing after %d frames", lNbFrames);
+		}
+		else
+		{
+			g_lFreezeRequest = 0;
+			fn_vPrint("Engine frozen");
+		}
 	}
 }

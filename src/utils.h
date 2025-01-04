@@ -30,6 +30,8 @@ extern BOOL (*GLI_FIX_bIsWidescreen)( void );
 extern float (*GLI_FIX_xGetActualRatio)( void );
 extern float g_xScreenRatio;
 
+extern char g_a_szMapsDesc[70][50];
+
 
 typedef enum tdeTimerId
 {

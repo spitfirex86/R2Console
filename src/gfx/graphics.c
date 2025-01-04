@@ -115,6 +115,46 @@ void GFX_vDraw2DGradientWithPercent( GLD_tdstViewportAttributes *p_stVpt, MTH_td
 	GLI_vSetGlobalAlpha(xSaveAlpha);
 }
 
+void GFX_fn_vDraw2DLine( MTH3D_tdstVector *p_stFirstPoint, MTH3D_tdstVector *p_stLastPoint, unsigned long ulColor )
+{
+	GLI_tdstInternalGlobalValuesFor3dEngine *pstGlobals = *GLI_BIG_GLOBALS;
+	GLD_tdstViewportAttributes *p_stVpt = &GAM_g_stEngineStructure->stFixViewportAttr;
+
+	GEO_tdstColor stColor;
+	GLI_tdstAligned3DVector a2_stVertex[2];
+	GLI_tdstAligned2DVector a2_st2DVertex[2];
+
+	pstGlobals->hCurrentMaterial = NULL;
+	pstGlobals->lCurrentDrawMask = 0xFFFFFFFF;
+	pstGlobals->lHierachDrawMask = 0xFFFFFFFF;
+	GLI_vDoMaterialSelection(pstGlobals);
+
+	a2_st2DVertex[0].ulPackedColor = a2_st2DVertex[1].ulPackedColor = ulColor;
+
+	stColor.xR = (float)((ulColor & 0x00FF0000) >> 16) * 1.0f;
+	stColor.xG = (float)((ulColor & 0x0000FF00) >> 8) * 1.0f;
+	stColor.xB = (float)((ulColor & 0x000000FF) >> 0) * 1.0f;
+	stColor.xA = 255.f;
+
+	a2_st2DVertex[0].xX = p_stFirstPoint->x * p_stVpt->dwWidth;
+	a2_st2DVertex[0].xY = p_stFirstPoint->y * p_stVpt->dwHeight;
+	a2_stVertex[0].xZ = a2_st2DVertex[0].xOoZ = 10000.0f;
+	a2_st2DVertex[1].xX = p_stLastPoint->x * p_stVpt->dwWidth;
+	a2_st2DVertex[1].xY = p_stLastPoint->y * p_stVpt->dwHeight;
+	a2_stVertex[1].xZ = a2_st2DVertex[1].xOoZ = 10000.0f;
+
+	(*GLI_DRV_vSendSingleLineToClip_)(
+		p_stVpt,
+		&a2_stVertex[0],
+		&a2_st2DVertex[0],
+		&a2_stVertex[1],
+		&a2_st2DVertex[1],
+		pstGlobals,
+		GLI_C_Mat_lGouraudLineElement,
+		&stColor
+		);
+}
+
 
 #if 0
 /****************************************************************************

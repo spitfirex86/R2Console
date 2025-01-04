@@ -634,7 +634,6 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 			fn_vResetPrompt();
 			fn_vResetScroll();
 			g_bForceThisCommand = FALSE;
-			
 		}
 		else if ( CON_bEnterHides->bValue )
 		{

@@ -97,6 +97,7 @@
     <ClInclude Include="src\gfx\font.h" />
     <ClInclude Include="src\framework.h" />
     <ClInclude Include="src\ext\ghost.h" />
+    <ClInclude Include="src\gfx\hershey.h" />
     <ClInclude Include="src\pick.h" />
     <ClInclude Include="src\r2ptr.h" />
     <ClInclude Include="src\gfx\graphics.h" />
@@ -113,6 +114,7 @@
     <ClCompile Include="src\gfx\font.c" />
     <ClCompile Include="src\ext\ghost.c" />
     <ClCompile Include="src\gfx\graphics.c" />
+    <ClCompile Include="src\gfx\hershey.c" />
     <ClCompile Include="src\pick.c" />
     <ClCompile Include="src\utils.c" />
     <ClCompile Include="src\ext\watch.c" />
