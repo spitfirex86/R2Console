@@ -743,10 +743,10 @@ void fn_vInitConsole( void )
 	FNT_fn_vFontInit();
 
 	fn_vInitVars();
+	fn_vInitCommands();
 
 	fn_vPrint(g_szVersion);
 	fn_vPrint("Type \"help\" for available commands");
-	fn_vInitCommands();
 
 	g_bIsInit = TRUE;
 }

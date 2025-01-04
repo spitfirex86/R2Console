@@ -89,9 +89,8 @@ tdstCommand;
 
 extern tdstCommand* g_a_stCommands;
 extern int g_lNbCommands;
-extern void fn_vInitCommands();
-extern void fn_vRegisterCommandW( tdstCommand command );
-R2CON_API extern void fn_vRegisterCommand( char* szName, tdfnCommand* p_stCommand );
+extern void fn_vInitCommands( void );
+R2CON_API extern void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand );
 
 extern void *g_pvLastCommandData;
 
