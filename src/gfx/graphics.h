@@ -33,6 +33,9 @@ void GFX_vDraw2DGradientWithPercent(
 	unsigned int *a4_ulColors
 );
 
+void GFX_fn_vDraw2DLine( MTH3D_tdstVector *p_stFirstPoint, MTH3D_tdstVector *p_stLastPoint, unsigned long ulColor );
+
+
 #define M_ulPackRGBA( R, G, B, A ) (unsigned long)(((A)&0xFF)<<24 | ((R)&0xFF)<<16 | ((G)&0xFF)<<8 | ((B)&0xFF))
 #define M_ulPackRGB( R, G, B ) M_ulPackRGBA(R, G, B, 0xFF)
 #define M_ulPackRGBAndAlpha( RGB, A ) (unsigned long)(((A)&0xFF)<<24 | ((RGB)&0xFFFFFF))
