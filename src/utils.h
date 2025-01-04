@@ -2,27 +2,26 @@
 
 #include "framework.h"
 
-#define LIBRARY_API __declspec(dllimport)
-
 
 /****************************************************************************
 * Utils
 ****************************************************************************/
 
-LIBRARY_API int fn_lSplitArgs( char *szString, char ***p_d_szArgsOut );
-LIBRARY_API void fn_vToLower( char *szDst, char *szSrc );
-LIBRARY_API int fn_vCharCountReverse( char *Str, char Ch, int lMaxChars );
-LIBRARY_API int fn_vNotCharCountReverse( char *Str, char Ch, int lMaxChars );
+int fn_lSplitArgs( char *szString, char ***p_d_szArgsOut );
+int fn_vCharCountReverse( char *Str, char Ch, int lMaxChars );
+int fn_vNotCharCountReverse( char *Str, char Ch, int lMaxChars );
 
-LIBRARY_API BOOL fn_bParseBool( char *szArg, BOOL *p_bOut );
-LIBRARY_API BOOL fn_bParseInt( char *szArg, int *p_lOut );
-LIBRARY_API BOOL fn_bParseReal( char *szArg, MTH_tdxReal *p_xOut );
-LIBRARY_API int fn_lParseCoordinates( int lSize, char **d_szArgs, MTH_tdxReal *d_xOut );
+R2CON_API void fn_vToLower( char *szDst, char *szSrc );
 
-LIBRARY_API BOOL fn_bParsePtr( char *szArg, void **p_pOut );
-LIBRARY_API BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
+R2CON_API BOOL fn_bParseBool( char *szArg, BOOL *p_bOut );
+R2CON_API BOOL fn_bParseInt( char *szArg, int *p_lOut );
+R2CON_API BOOL fn_bParseReal( char *szArg, MTH_tdxReal *p_xOut );
+R2CON_API int fn_lParseCoordinates( int lSize, char **d_szArgs, MTH_tdxReal *d_xOut );
 
-LIBRARY_API void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd );
+R2CON_API BOOL fn_bParsePtr( char *szArg, void **p_pOut );
+R2CON_API BOOL fn_bParseObjectRef( char *szArg, HIE_tdstSuperObject **p_pstOut );
+
+void fn_vMouseCoordToPercent( MTH2D_tdstVector *p_stOut, LPARAM lParam, HWND hWnd );
 
 /* widescreen stuff */
 BOOL fn_bInitWidescreenSupport( void );
