@@ -9,6 +9,7 @@ tdfnCommand fn_vHelpCmd;
 tdfnCommand fn_vClearCmd;
 tdfnCommand fn_vMapCmd;
 tdfnCommand fn_vReinitCmd;
+tdfnCommand fn_vMapsCmd;
 tdfnCommand fn_vListObjCmd;
 tdfnCommand fn_vFindCmd;
 tdfnCommand fn_vGetSetPosCmd;
@@ -31,6 +32,7 @@ tdstCommand g_a_stCommands[] = {
 	{ "tp", fn_vTeleportCmd },
 	{ "tpto", fn_vTeleportToCmd },
 	{ "noclip", fn_vGhostCmd },
+	{ "maps", fn_vMapsCmd },
 	{ "listobj", fn_vListObjCmd },
 	{ "find", fn_vFindCmd },
 	{ "actor", fn_vActorCmd },
@@ -113,6 +115,19 @@ void fn_vMapCmd( int lNbArgs, char **d_szArgs )
 	}
 
 	fn_vPrintCFmt(2, "Unknown map \"%s\"", szName);
+}
+
+void fn_vMapsCmd( int lNbArgs, char **d_szArgs )
+{
+	char szName[32];
+
+	//fn_vPrint("Maps:");
+	for ( int i = 0; i < GAM_g_stEngineStructure->ucNumberOfLevels; i++ )
+	{
+		char *szMap = GAM_g_stEngineStructure->a_szLevelName[i];
+		sprintf(szName, M_HiLite("%s"), szMap);
+		fn_vPrintCFmt(0, "%-*s%s", 14, szName, g_a_szMapsDesc[i]);
+	}
 }
 
 void fn_vReinitCmd( int lNbArgs, char **d_szArgs )
@@ -230,11 +245,15 @@ void fn_vFindCmd( int lNbArgs, char **d_szArgs )
 		fn_vPrint("Maps:");
 		for ( int i = 0; i < GAM_g_stEngineStructure->ucNumberOfLevels; i++ )
 		{
-			fn_vToLower(szName, GAM_g_stEngineStructure->a_szLevelName[i]);
-			if ( strstr(szName, szFind) )
+			char *szMap = GAM_g_stEngineStructure->a_szLevelName[i];
+			char *szDesc = g_a_szMapsDesc[i];
+
+			if ( (fn_vToLower(szName, szMap), strstr(szName, szFind))
+				|| (fn_vToLower(szName, szDesc), strstr(szName, szFind)) )
 			{
 				lFoundMap++;
-				fn_vPrintCFmt(0, "  " M_HiLite("%s"), GAM_g_stEngineStructure->a_szLevelName[i]);
+				sprintf(szName, M_HiLite("%s"), szMap);
+				fn_vPrintCFmt(0, "  %-*s%s", 14, szName, szDesc);
 			}
 		}
 		if ( !lFoundMap )
