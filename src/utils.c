@@ -1,4 +1,5 @@
 ﻿#include "framework.h"
+#include "r2console_api.h"
 #include "console.h"
 #include "utils.h"
 

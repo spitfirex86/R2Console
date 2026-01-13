@@ -1,4 +1,5 @@
 #include "framework.h"
+#include "r2console_api.h"
 #include "console.h"
 #include "gfx/graphics.h"
 #include "gfx/font.h"
@@ -10,7 +11,7 @@
 #include "pick.h"
 
 
-char const g_szVersion[] = "R2Console v1.3 (" __DATE__ " " __TIME__ ")";
+char const g_szVersion[] = "R2Console v1.4 (" __DATE__ " " __TIME__ ")";
 
 BOOL g_bIsInit = FALSE;
 BOOL g_bShow = FALSE;

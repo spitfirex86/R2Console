@@ -54,6 +54,9 @@
     <ClInclude Include="src\gfx\hershey.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\r2console_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.c">
