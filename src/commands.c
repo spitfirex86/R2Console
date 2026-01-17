@@ -9,6 +9,7 @@
 tdfnCommand fn_vHelpCmd;
 tdfnCommand fn_vClearCmd;
 tdfnCommand fn_vMapCmd;
+tdfnCmdComplete fn_vMapCmdAC;
 tdfnCommand fn_vReinitCmd;
 tdfnCommand fn_vMapsCmd;
 tdfnCommand fn_vListObjCmd;
@@ -19,6 +20,7 @@ tdfnCommand fn_vVersionCmd;
 tdfnCommand fn_vQuitCmd;
 tdfnCommand fn_vTeleportCmd;
 tdfnCommand fn_vTeleportToCmd;
+tdfnCmdComplete fn_vTeleportToCmdAC;
 tdfnCommand fn_vGhostCmd;
 tdfnCommand fn_vCVarCmd;
 tdfnCommand fn_vActorCmd;
@@ -30,10 +32,10 @@ tdstCommand *g_a_stCommands = NULL;
 int g_lNbCommands = 0;
 
 void fn_vInitCommands( void ) {
-	fn_vRegisterCommand("map", fn_vMapCmd);
+	fn_vRegisterCommandWithComplete("map", fn_vMapCmd, fn_vMapCmdAC);
 	fn_vRegisterCommand("pos", fn_vGetSetPosCmd);
 	fn_vRegisterCommand("tp", fn_vTeleportCmd);
-	fn_vRegisterCommand("tpto", fn_vTeleportToCmd);
+	fn_vRegisterCommandWithComplete("tpto", fn_vTeleportToCmd, fn_vTeleportToCmdAC);
 	fn_vRegisterCommand("noclip", fn_vGhostCmd);
 	fn_vRegisterCommand("maps", fn_vMapsCmd);
 	fn_vRegisterCommand("listobj", fn_vListObjCmd);
@@ -76,11 +78,11 @@ void fn_vInternalRegisterCommand( tdstCommand *pNewCmd )
 	g_lNbCommands++;
 }
 
-void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand )
+void fn_vRegisterCommandWithComplete( char *szName, tdfnCommand *p_fnCommand, tdfnCmdComplete *p_fnComplete )
 {
 	if ( !szName || *szName == 0 )
 	{
-		fn_vPrintCFmt(2, "Cannot register command %p: name empty", p_stCommand);
+		fn_vPrintCFmt(2, "Cannot register command %p: name empty", p_fnCommand);
 		return;
 	}
 	if ( strlen(szName) > C_MaxCmdName )
@@ -92,10 +94,16 @@ void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand )
 	// TODO: make sure command names are not duplicate !!
 
 	tdstCommand stCmd = { 0 };
-	stCmd.p_stCommand = p_stCommand;
+	stCmd.p_fnCommand = p_fnCommand;
+	stCmd.p_fnComplete = p_fnComplete;
 	strcpy(stCmd.szName, szName);
 
 	fn_vInternalRegisterCommand(&stCmd);
+}
+
+void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand )
+{
+	fn_vRegisterCommandWithComplete(szName, p_stCommand, NULL);
 }
 
 void fn_vHelpCmd( int lNbArgs, char **d_szArgs )
@@ -158,6 +166,30 @@ void fn_vMapCmd( int lNbArgs, char **d_szArgs )
 	}
 
 	fn_vPrintCFmt(2, "Unknown map \"%s\"", szName);
+}
+
+unsigned long fn_vMapCmdAC( tdstAutocomplete *pstAC )
+{
+	if ( pstAC->ucWhich > 1 )
+		return 0;
+
+	unsigned long ulNbMatch = 0;
+
+	for ( int i = 0; i < GAM_g_stEngineStructure->ucNumberOfLevels; i++ )
+	{
+		char szMapLower[MAX_NAME_LEVEL];
+		char *szMap = GAM_g_stEngineStructure->a_szLevelName[i];
+		fn_vToLower(szMapLower, szMap);
+		
+		if ( strstr(szMapLower, pstAC->szToComplete) )
+		{
+			strcpy(pstAC->a_szMatches[ulNbMatch++], szMap);
+			if ( ulNbMatch >= C_MaxMatches )
+				break;
+		}
+	}
+
+	return ulNbMatch;
 }
 
 void fn_vMapsCmd( int lNbArgs, char **d_szArgs )
@@ -562,6 +594,43 @@ void fn_vTeleportToCmd( int lNbArgs, char **d_szArgs )
 	fn_vPrintCFmt(0, "Teleporting \"" M_HiLite("%s") "\" to \"" M_HiLite("%s") "\":", szName, szDestName);
 	fn_vPrintCFmt(0, "  Old pos:  X: %.3f  Y: %.3f  Z: %.3f", stOldPos.x, stOldPos.y, stOldPos.z);
 	fn_vPrintCFmt(0, "  New pos:  X: %.3f  Y: %.3f  Z: %.3f", pPos->x, pPos->y, pPos->z);
+}
+
+unsigned long fn_vTeleportToCmdAC( tdstAutocomplete *pstAC )
+{
+	if ( pstAC->ucWhich > 1 )
+		return 0;
+
+	HIE_tdstSuperObject *a_pstToSearch[2] = {
+		*GAM_g_p_stDynamicWorld,
+		*GAM_g_p_stInactiveDynamicWorld
+	};
+
+	char szName[128];
+	unsigned long ulNbMatch = 0;
+
+	for ( size_t i = 0; i < ARRAYSIZE(a_pstToSearch); i++ )
+	{
+		HIE_tdstSuperObject *pAct;
+		LST_M_DynamicForEach(a_pstToSearch[i], pAct)
+		{
+			if ( pAct->ulType != HIE_C_Type_Actor )
+				continue;
+			char *pName = HIE_fn_szGetObjectPersonalName(pAct);
+			if ( !pName )
+				continue;
+
+			fn_vToLower(szName, pName);
+			if ( strstr(szName, pstAC->szToComplete) )
+			{
+				strcpy(pstAC->a_szMatches[ulNbMatch++], pName);
+				if (ulNbMatch >= C_MaxMatches)
+					return ulNbMatch;
+			}
+		}
+	}
+
+	return ulNbMatch;
 }
 
 void fn_vGhostCmd( int lNbArgs, char **d_szArgs )

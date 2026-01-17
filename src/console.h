@@ -74,12 +74,15 @@ void fn_vPasteAtCaret( char *szStr, int lStrLen );
 #define M_HiLite(str) C_szHiLiteBegin ## str ## C_szHiLiteEnd
 
 
+typedef struct tdstAutocomplete tdstAutocomplete;
+typedef unsigned long tdfnCmdComplete( tdstAutocomplete *p_stAutocomplete );
 typedef void tdfnCommand( int lNbArgs, char **d_szArgs );
 
 typedef struct tdstCommand
 {
     char szName[C_MaxCmdName];
-	tdfnCommand *p_stCommand;
+	tdfnCommand *p_fnCommand;
+	tdfnCmdComplete *p_fnComplete;
 #if defined(USE_WATCH) 
 	WAT_tdfnWatchCallback *p_fnWatchCallback;
 #endif
@@ -91,7 +94,37 @@ extern tdstCommand* g_a_stCommands;
 extern int g_lNbCommands;
 void fn_vInitCommands( void );
 void fn_vRegisterCommand( char *szName, tdfnCommand *p_stCommand );
+void fn_vRegisterCommandWithComplete( char *szName, tdfnCommand *p_fnCommand, tdfnCmdComplete *p_fnComplete );
 
 extern void *g_pvLastCommandData;
 
 extern BOOL g_bForceThisCommand;
+
+
+/****************************************************************************
+ * Autocomplete
+ ****************************************************************************/
+
+#define C_MaxMatches 20
+#define C_MaxMatchLen 64
+
+typedef struct tdstAutocomplete
+{
+	unsigned char ucState;
+	unsigned char ucWhich;
+	unsigned long ulPos;
+
+	unsigned long ulNextMatch;
+	unsigned long ulNbMatch;
+
+	tdstCommand *p_stCommand;
+
+	char szToComplete[C_MaxLine];
+	char szLine[C_MaxLine];
+
+	void *a_pMatches[C_MaxMatches];
+	char a_szMatches[C_MaxMatches][C_MaxMatchLen];
+}
+tdstAutocomplete;
+
+extern tdstAutocomplete g_stAC;

@@ -88,6 +88,8 @@ void fn_vAnimOneStep( void )
 
 void fn_vDrawConsoleSprites( void )
 {
+	GLD_tdstViewportAttributes *p_stVpt = &GAM_g_stEngineStructure->stFixViewportAttr;
+
 	MTH2D_tdstVector stTL = g_stCurrentPos;
 	MTH2D_tdstVector stBR = { 0 };
 	GFX_fn_vAdd2DVector(&stBR, &g_stCurrentPos, g_p_stSize);
@@ -96,7 +98,7 @@ void fn_vDrawConsoleSprites( void )
 
 	if ( CON_bClassicStyle->bValue ) /* use old frame */
 	{
-		GFX_fn_vDisplayFrameWithZValue(&stTL, &stBR, C_ClassicTransparency, 1.1f, &GAM_g_stEngineStructure->stFixViewportAttr);
+		GFX_fn_vDisplayFrameWithZValue(&stTL, &stBR, C_ClassicTransparency, 1.1f, p_stVpt);
 		return;
 	}
 
@@ -118,36 +120,36 @@ void fn_vDrawConsoleSprites( void )
 
 	/* frame 1 */
 	a4_ulColors[0] = a4_ulColors[1] = a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
-	GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x, stTL.y, stBR.x, stBR.y, a4_ulColors);
+	GFX_vDraw2DGradientWithPercent(p_stVpt, stTL.x, stTL.y, stBR.x, stBR.y, a4_ulColors);
 
 	/* frame 2 */
 	a4_ulColors[0] = a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
 	a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
-	GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x, stBR.y, stBR.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
+	GFX_vDraw2DGradientWithPercent(p_stVpt, stTL.x, stBR.y, stBR.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
 
 	if ( GLI_FIX_bIsWidescreen() )
 	{
 		/* frame 3 */
 		a4_ulColors[0] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
 		a4_ulColors[1] = a4_ulColors[2] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
-		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x - C_FrameSideMargin, stTL.y, stTL.x, stBR.y, a4_ulColors);
+		GFX_vDraw2DGradientWithPercent(p_stVpt, stTL.x - C_FrameSideMargin, stTL.y, stTL.x, stBR.y, a4_ulColors);
 
 		/* frame 4 */
 		a4_ulColors[0] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
 		a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
 		a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
-		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stTL.x - C_FrameSideMargin, stBR.y, stTL.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
+		GFX_vDraw2DGradientWithPercent(p_stVpt, stTL.x - C_FrameSideMargin, stBR.y, stTL.x, stBR.y + C_FrameBottomMargin, a4_ulColors);
 
 		/* frame 5 */
 		a4_ulColors[0] = a4_ulColors[3] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
 		a4_ulColors[1] = a4_ulColors[2] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
-		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stBR.x, stTL.y, stBR.x + C_FrameSideMargin, stBR.y, a4_ulColors);
+		GFX_vDraw2DGradientWithPercent(p_stVpt, stBR.x, stTL.y, stBR.x + C_FrameSideMargin, stBR.y, a4_ulColors);
 
 		/* frame 6 */
 		a4_ulColors[0] = M_ulPackRGBAndAlpha(C_FrameColor, 0);
 		a4_ulColors[1] = M_ulPackRGBAndAlpha(C_FrameColor, C_Transparency);
 		a4_ulColors[2] = a4_ulColors[3] = M_ulPackRGBAndAlpha(0x000000, 0);
-		GFX_vDraw2DGradientWithPercent(&GAM_g_stEngineStructure->stFixViewportAttr, stBR.x, stBR.y, stBR.x + C_FrameSideMargin, stBR.y + C_FrameBottomMargin, a4_ulColors);
+		GFX_vDraw2DGradientWithPercent(p_stVpt, stBR.x, stBR.y, stBR.x + C_FrameSideMargin, stBR.y + C_FrameBottomMargin, a4_ulColors);
 	}
 
 	*GLI_g_fZValueForSprite = xSaveZValue;
@@ -236,6 +238,9 @@ void fn_vDrawConsole( void )
 
 	if ( g_lCaretFrame < C_CaretFrames )
 		FNT_fn_vDisplayString(x + xCaretOffset, y, (g_bReplaceMode ? "\022_" : "_"));
+	
+	if ( g_stAC.ucState > 0 )
+		FNT_fn_vDisplayString(x + (C_Font_xActualCharWidth * (float)(g_stAC.ulPos + 1)), y+2, "\023_");
 
 	/* scrollbar */
 	MTH_tdxReal xScrollBarHeight = M_PercentToFontY(g_p_stSize->y) - (C_Font_xCharHeight * 2);
@@ -432,7 +437,7 @@ void fn_vParseCommand( char *szString )
 			strcpy(szArgs, szString + length);
 			int lCount = fn_lSplitArgs(szArgs, &d_szArgs);
 
-			g_a_stCommands[i].p_stCommand(lCount, d_szArgs);
+			g_a_stCommands[i].p_fnCommand(lCount, d_szArgs);
 			g_lLastCommandId = i;
 
 			if ( bPerfCmd )
@@ -447,6 +452,148 @@ void fn_vParseCommand( char *szString )
 	}
 
 	fn_vPrintC(2, "Unknown command");
+}
+
+tdstAutocomplete g_stAC = { 0 };
+
+void fn_vResetAutocomplete( void )
+{
+	g_stAC.ucState = 0;
+	g_stAC.ulNbMatch = 0;
+	g_stAC.ulNextMatch = 0;
+	g_stAC.p_stCommand = NULL;
+}
+
+unsigned long fn_ulParseAutocompleteACmd( char const *szString )
+{
+	g_stAC.ucWhich = 0;
+	fn_vToLower(g_stAC.szToComplete, szString);
+
+	unsigned long ulNbMatch = 0;
+	for ( int i = 0; i < g_lNbCommands && ulNbMatch < C_MaxMatches; i++ )
+	{
+		char const *szCmd = g_a_stCommands[i].szName;
+		if ( strstr(szCmd, g_stAC.szToComplete) != szCmd )
+			continue;
+
+		g_stAC.a_pMatches[ulNbMatch++] = (void *)&g_a_stCommands[i];
+	}
+	g_stAC.ulNbMatch = ulNbMatch;
+
+	return ulNbMatch;
+}
+
+unsigned long fn_ulParseAutocompleteAArg( char const *szString, char const *szCommand )
+{
+	tdstCommand *pCmd = NULL;
+
+	for ( int i = 0; i < g_lNbCommands; i++ )
+	{
+		if ( _stricmp(szCommand, g_a_stCommands[i].szName) != 0 )
+			continue;
+
+		pCmd = &g_a_stCommands[i];
+		break;
+	}
+	if ( !pCmd || !pCmd->p_fnComplete )
+	{
+		g_stAC.ucWhich = 1;
+		g_stAC.ulNbMatch = 0;
+		return 0;
+	}
+
+	unsigned char ucWhich = 0;
+	int length = 0;
+	do
+	{
+		szString += length;
+		szString += strspn(szString, " !");
+		length = strcspn(szString, " ");
+		ucWhich++;
+	}
+	while ( szString[length] != 0 );
+
+	g_stAC.p_stCommand = pCmd;
+	g_stAC.ucWhich = ucWhich;
+	fn_vToLower(g_stAC.szToComplete, szString);
+	g_stAC.ulPos -= length;
+
+	unsigned long ulNbMatch = pCmd->p_fnComplete(&g_stAC);
+	g_stAC.ulNbMatch = ulNbMatch;
+	return ulNbMatch;
+}
+ 
+unsigned long fn_ulParseAutocomplete( char const *szInitPrompt, unsigned long ulInitCaret )
+{
+	//char szToComplete[C_MaxCmdName];
+	//char szArgs[C_MaxLine];
+
+	strncpy(g_stAC.szLine, szInitPrompt, ulInitCaret);
+	g_stAC.szLine[ulInitCaret] = 0;
+	g_stAC.ulPos = ulInitCaret;
+	g_stAC.ulNextMatch = 0;
+
+	char const *szString = g_stAC.szLine;
+
+	szString += strspn(szString, " !");
+	int length = strcspn(szString, " ");
+
+	if ( length <= 0 || length >= C_MaxCmdName )
+		return 0;
+
+	if ( szString[length] == 0 ) // matching command
+		return fn_ulParseAutocompleteACmd(szString);
+
+	// otherwise, matching args
+	char szCommand[C_MaxCmdName];
+	strncpy(szCommand, szString, length);
+	szCommand[length] = 0;
+	szString += length;
+
+	return fn_ulParseAutocompleteAArg(szString, szCommand);
+}
+
+void fn_vInsertMatch( unsigned long ulIdx )
+{
+	if ( !g_stAC.ulNbMatch )
+		return;
+
+	unsigned long ulInsertAt = g_stAC.ulPos;
+	ulIdx = ulIdx % g_stAC.ulNbMatch;
+
+	if ( g_stAC.ucWhich == 0 ) // command
+	{
+		tdstCommand *pMatch = (tdstCommand*)g_stAC.a_pMatches[ulIdx];
+		char const *szCmd = pMatch->szName;
+		
+		size_t skip = strlen(g_stAC.szToComplete);
+		size_t length = strlen(szCmd) - skip;
+
+		if ( ulInsertAt + length <= C_MaxPromptChars )
+			strcpy(g_szPrompt + ulInsertAt, szCmd + skip);
+	}
+	else // args
+	{
+		char const *szArg = g_stAC.a_szMatches[ulIdx];
+		size_t length = strlen(szArg);
+		if ( ulInsertAt + length <= C_MaxPromptChars )
+			strcpy(g_szPrompt + ulInsertAt, szArg);
+	}
+
+	g_ulNbChars = g_ulCaretPos = strlen(g_szPrompt);
+}
+
+void fn_vDoAutocomplete( void )
+{
+	switch ( g_stAC.ucState )
+	{
+	case 0:
+		fn_ulParseAutocomplete(g_szPrompt, g_ulCaretPos);
+		g_stAC.ucState = 1;
+	case 1:
+		fn_vInsertMatch(g_stAC.ulNextMatch++);
+		break;
+	}
 }
 
 void fn_vResetPrompt( void )
@@ -640,58 +787,66 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 		{
 			fn_vShowConsole();
 		}
-		return TRUE;
+		break;
 
 	case VK_BACK:
 		fn_vBackspaceCharAtCaret();
-		return TRUE;
+		break;
 
 	case VK_UP:
 		fn_vSetPromptFromHistory(g_lHistoryIdx + 1);
-		return TRUE;
+		break;
 
 	case VK_DOWN:
 		fn_vSetPromptFromHistory(g_lHistoryIdx - 1);
-		return TRUE;
+		break;
 
 	case VK_LEFT:
 		(GetKeyState(VK_CONTROL) & 0x8000)
 			? fn_vMoveCaretByWord(-1)
 			: fn_vMoveCaret(-1);
-		return TRUE;
+		break;
 
 	case VK_RIGHT:
 		(GetKeyState(VK_CONTROL) & 0x8000)
 			? fn_vMoveCaretByWord(1)
 			: fn_vMoveCaret(1);
-		return TRUE;
+		break;
 
 	case VK_HOME:
 		g_ulCaretPos = 0;
-		return TRUE;
+		break;
 
 	case VK_END:
 		fn_vPutCaretAtEnd();
-		return TRUE;
+		break;
 
 	case VK_PRIOR:
 		fn_vScrollConsole(1);
-		return TRUE;
+		break;
 
 	case VK_NEXT:
 		fn_vScrollConsole(-1);
-		return TRUE;
+		break;
 
 	case VK_INSERT:
 		g_bReplaceMode = !g_bReplaceMode;
-		return TRUE;
+		break;
 
 	case VK_ESCAPE:
 		fn_vShowConsole();
+		break;
+
+	case VK_TAB:
+		fn_vDoAutocomplete();
 		return TRUE;
+
+	default:
+		return FALSE;
 	}
 
-	return FALSE;
+	fn_vResetAutocomplete();
+	return TRUE;
 }
 
 BOOL fn_bProcessChar( DWORD dwChar )
@@ -708,6 +863,8 @@ BOOL fn_bProcessChar( DWORD dwChar )
 	g_bReplaceMode
 		? fn_vReplaceCharAtCaret((char)dwChar)
 		: fn_vInsertCharAtCaret((char)dwChar);
+
+	fn_vResetAutocomplete();
 
 	return TRUE;
 }
