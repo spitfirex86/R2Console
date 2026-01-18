@@ -460,7 +460,7 @@ void fn_vResetAutocomplete( void )
 {
 	g_stAC.ucState = 0;
 	g_stAC.ulNbMatch = 0;
-	g_stAC.ulNextMatch = 0;
+	g_stAC.ulCurrentMatch = 0;
 	g_stAC.p_stCommand = NULL;
 }
 
@@ -531,7 +531,7 @@ unsigned long fn_ulParseAutocomplete( char const *szInitPrompt, unsigned long ul
 	strncpy(g_stAC.szLine, szInitPrompt, ulInitCaret);
 	g_stAC.szLine[ulInitCaret] = 0;
 	g_stAC.ulPos = ulInitCaret;
-	g_stAC.ulNextMatch = 0;
+	g_stAC.ulCurrentMatch = 0;
 
 	char const *szString = g_stAC.szLine;
 
@@ -583,17 +583,39 @@ void fn_vInsertMatch( unsigned long ulIdx )
 	g_ulNbChars = g_ulCaretPos = strlen(g_szPrompt);
 }
 
-void fn_vDoAutocomplete( void )
+void fn_vDoAutocomplete( BOOL bReverseDir )
 {
+	unsigned long ulMatch;
+
 	switch ( g_stAC.ucState )
 	{
 	case 0:
 		fn_ulParseAutocomplete(g_szPrompt, g_ulCaretPos);
+		fn_vInsertMatch(g_stAC.ulCurrentMatch);
 		g_stAC.ucState = 1;
+		break;
+
 	case 1:
-		fn_vInsertMatch(g_stAC.ulNextMatch++);
+		ulMatch = g_stAC.ulCurrentMatch + (bReverseDir ? -1 : 1);
+		g_stAC.ulCurrentMatch = (ulMatch + g_stAC.ulNbMatch) % g_stAC.ulNbMatch;
+		fn_vInsertMatch(g_stAC.ulCurrentMatch);
 		break;
 	}
+}
+
+void fn_vCancelAutocomplete( void )
+{
+	if ( g_stAC.ulNbMatch )
+	{
+		if ( g_stAC.ucWhich == 0 ) // command
+			g_szPrompt[g_stAC.ulPos] = 0;
+		else // args
+			strcpy(g_szPrompt + g_stAC.ulPos, g_stAC.szToComplete);
+
+		g_ulNbChars = g_ulCaretPos = strlen(g_szPrompt);
+	}
+
+	fn_vResetAutocomplete();
 }
 
 void fn_vResetPrompt( void )
@@ -834,11 +856,14 @@ BOOL fn_bProcessKey( DWORD dwKeyCode )
 		break;
 
 	case VK_ESCAPE:
-		fn_vShowConsole();
+		if ( g_stAC.ucState > 0 )
+			fn_vCancelAutocomplete();
+		else
+			fn_vShowConsole();
 		break;
 
 	case VK_TAB:
-		fn_vDoAutocomplete();
+		fn_vDoAutocomplete(GetKeyState(VK_SHIFT) & 0x8000);
 		return TRUE;
 
 	default:

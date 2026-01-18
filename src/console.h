@@ -114,7 +114,7 @@ typedef struct tdstAutocomplete
 	unsigned char ucWhich;
 	unsigned long ulPos;
 
-	unsigned long ulNextMatch;
+	unsigned long ulCurrentMatch;
 	unsigned long ulNbMatch;
 
 	tdstCommand *p_stCommand;
